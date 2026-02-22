@@ -171,12 +171,12 @@ Run the auth script:
 slimclaw-auth
 ```
 
-This displays a QR code. Tell the user:
+This opens a **browser window** with a scannable QR code (also prints to terminal as fallback). The page auto-refreshes when the QR rotates. Tell the user:
 1. Open WhatsApp on their phone
 2. Go to Settings > Linked Devices > Link a Device
-3. Scan the QR code displayed in the terminal
+3. Scan the QR code in the browser window
 
-Wait for confirmation that auth succeeded (credentials saved to `store/auth/neonize.db`).
+Wait for confirmation that auth succeeded (credentials saved to `store/auth/neonize.db`). The browser page will show "Authenticated!" on success.
 
 **If failed:**
 - QR expired: re-run `slimclaw-auth` to generate a fresh QR
