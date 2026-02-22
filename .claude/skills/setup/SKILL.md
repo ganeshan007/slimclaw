@@ -233,9 +233,11 @@ Wait for confirmation that auth succeeded (credentials saved to `store/auth/neon
 - Auth database locked: delete `store/auth/neonize.db` and retry
 - neonize import error: ensure `libmagic` is installed and `pip install -e .` succeeded
 
-## 8. WhatsApp Channel Type
+## 8. Set Up Main Channel
 
-AskUserQuestion: How do you want to talk to {BotName} on WhatsApp?
+Explain to the user: "The **main channel** is your private admin chat with {BotName}. No trigger word needed — every message goes straight to {BotName}. Use it to manage the bot, register new groups, and schedule tasks. To use {BotName} in group chats with other people, you'll add those groups later from the main channel (just say 'join Family Chat'). Group members invoke {BotName} with @{BotName}."
+
+AskUserQuestion: Where should your main channel be?
 
 **If bot shares user's personal phone number (same phone):**
 1. Self-chat (chat with yourself) — Recommended. You message yourself and the bot responds.

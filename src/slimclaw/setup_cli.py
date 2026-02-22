@@ -413,31 +413,42 @@ def step_7_whatsapp_auth(status: dict[str, str]) -> None:
 
 
 def step_8_channel_type(bot_name: str) -> dict:
-    _header(8, "WhatsApp Channel Type")
+    _header(8, "Set Up Main Channel")
 
-    choice = _choose(f"How do you want to talk to {bot_name} on WhatsApp?", [
+    print(f"  {BOLD}What is the main channel?{RESET}")
+    print(f"  {DIM}Your private admin chat with {bot_name}. No trigger word needed here —{RESET}")
+    print(f"  {DIM}every message goes straight to {bot_name}. Use it to manage the bot,{RESET}")
+    print(f"  {DIM}register new groups, and schedule tasks.{RESET}")
+    print()
+    print(f"  {DIM}To use {bot_name} in group chats with other people, you'll add those{RESET}")
+    print(f"  {DIM}groups later from the main channel (just say \"join Family Chat\").{RESET}")
+    print(f"  {DIM}Group members invoke {bot_name} with @{bot_name}.{RESET}")
+    print()
+
+    choice = _choose("Where should your main channel be?", [
         "Self-chat (message yourself) — recommended",
-        "Solo group (group with just you)",
+        "Solo group (a group with just you)",
         "DM with bot (bot has its own phone number)",
     ])
 
     return {"type": ["self", "group", "dm"][choice]}
 
 
-def step_9_discover_group(channel_info: dict) -> str:
+def step_9_discover_group(channel_info: dict) -> tuple[str, str]:
+    """Returns (jid, display_name)."""
     _header(9, "Discover & Select Group")
 
     if channel_info["type"] == "self":
         phone = _prompt("Your WhatsApp phone number (with country code, no +)")
         jid = f"{phone}@s.whatsapp.net"
         _ok(f"JID: {jid}")
-        return jid
+        return jid, "Self-chat"
 
     if channel_info["type"] == "dm":
         phone = _prompt("Bot's WhatsApp phone number (with country code, no +)")
         jid = f"{phone}@s.whatsapp.net"
         _ok(f"JID: {jid}")
-        return jid
+        return jid, "DM with bot"
 
     # Group — need to sync
     print(f"  {DIM}Syncing WhatsApp groups (starting slimclaw briefly)...{RESET}")
@@ -450,7 +461,7 @@ def step_9_discover_group(channel_info: dict) -> str:
     if not db_path.exists():
         _fail("No database found — WhatsApp may not have synced")
         jid = _prompt("Enter the group JID manually (e.g. 123456@g.us)")
-        return jid
+        return jid, jid
 
     conn = sqlite3.connect(str(db_path))
     rows = conn.execute(
@@ -461,7 +472,7 @@ def step_9_discover_group(channel_info: dict) -> str:
     if not rows:
         _warn("No groups found")
         jid = _prompt("Enter the group JID manually")
-        return jid
+        return jid, jid
 
     options = [f"{name} {DIM}({jid}){RESET}" for jid, name in rows]
     options.append("Enter JID manually")
@@ -469,9 +480,10 @@ def step_9_discover_group(channel_info: dict) -> str:
     choice = _choose("Select your group:", options)
 
     if choice == len(options) - 1:
-        return _prompt("Enter the group JID")
+        jid = _prompt("Enter the group JID")
+        return jid, jid
 
-    return rows[choice][0]
+    return rows[choice][0], rows[choice][1]
 
 
 def step_10_register(jid: str, bot_name: str) -> None:
@@ -494,7 +506,7 @@ def step_10_register(jid: str, bot_name: str) -> None:
     Path("groups/main/logs").mkdir(parents=True, exist_ok=True)
     Path("groups/global").mkdir(parents=True, exist_ok=True)
 
-    _ok(f"Registered {jid} as main channel")
+    _ok(f"Registered as main channel")
 
 
 def step_11_mount_allowlist() -> None:
@@ -665,11 +677,15 @@ def run() -> None:
     step_5_container(status)
     step_6_claude_auth(status)
 
+    channel_name = None
     if app == "whatsapp":
         step_7_whatsapp_auth(status)
         channel_info = step_8_channel_type(bot_name)
-        jid = step_9_discover_group(channel_info)
+        jid, channel_name = step_9_discover_group(channel_info)
         step_10_register(jid, bot_name)
+        print(f"\n  {BOLD}Your main channel:{RESET} {channel_name}")
+        print(f"  {DIM}Send messages here to talk to {bot_name} — no @{bot_name} prefix needed.{RESET}")
+        print(f"  {DIM}To add {bot_name} to other groups, say \"join <group name>\" here.{RESET}")
     elif app.startswith("skill:"):
         skill = app.removeprefix("skill:")
         print(f"\n  {CYAN}Base setup complete!{RESET}")
