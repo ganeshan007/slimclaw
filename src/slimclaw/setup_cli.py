@@ -392,17 +392,28 @@ def step_7_whatsapp_auth(status: dict[str, str]) -> None:
             auth_db.unlink()
             _ok("Old credentials deleted")
 
-    print(f"  {DIM}Launching WhatsApp auth (QR code will open in browser)...{RESET}")
-    print(f"  Scan the QR code: WhatsApp → Settings → Linked Devices → Link a Device")
-    print()
+    while True:
+        print(f"  {DIM}Launching WhatsApp auth (QR code will open in browser)...{RESET}")
+        print(f"  Scan the QR code: WhatsApp → Settings → Linked Devices → Link a Device")
+        print()
 
-    try:
-        _run("slimclaw-auth", timeout=180)
-        _ok("WhatsApp authenticated")
-    except subprocess.CalledProcessError:
-        _fail("Authentication failed — try running slimclaw-auth manually")
-    except subprocess.TimeoutExpired:
-        _fail("Authentication timed out — run slimclaw-auth manually")
+        try:
+            _run("slimclaw-auth", timeout=300)
+            _ok("WhatsApp authenticated")
+            return
+        except subprocess.CalledProcessError:
+            _fail("Authentication failed")
+        except subprocess.TimeoutExpired:
+            _fail("Authentication timed out")
+
+        # Check if auth actually succeeded despite the error/timeout
+        if Path("store/auth/neonize.db").exists():
+            _ok("Credentials found — authentication may have succeeded")
+            return
+
+        if not _confirm("Retry authentication?"):
+            _fail("WhatsApp authentication required — run slimclaw-auth manually to continue")
+            sys.exit(1)
 
 
 def step_8_channel_type(bot_name: str) -> dict:
