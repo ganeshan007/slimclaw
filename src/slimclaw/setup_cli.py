@@ -254,10 +254,9 @@ def step_4_install_deps() -> None:
 
     already_installed = False
     try:
-        result = _run("slimclaw --help", capture=True, check=False)
-        if result.returncode == 0:
-            already_installed = True
-    except FileNotFoundError:
+        import slimclaw.main  # noqa: F401
+        already_installed = bool(shutil.which("slimclaw"))
+    except ImportError:
         pass
 
     if already_installed:
