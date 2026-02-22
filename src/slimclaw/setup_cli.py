@@ -507,7 +507,11 @@ def step_11_mount_allowlist() -> None:
         if not _confirm("Reconfigure?", default=False):
             return
 
-    if not _confirm("Grant agent access to directories outside SlimClaw?", default=False):
+    print(f"  {DIM}By default, the agent is sandboxed — it can only access its own group folder.{RESET}")
+    print(f"  {DIM}You can optionally grant access to other directories (e.g. ~/projects){RESET}")
+    print(f"  {DIM}so the agent can read or edit files there when you ask it to.{RESET}")
+    print()
+    if not _confirm("Grant access to directories outside SlimClaw?", default=False):
         allowlist_path.parent.mkdir(parents=True, exist_ok=True)
         allowlist_path.write_text(json.dumps({
             "allowed_roots": [],
