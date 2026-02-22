@@ -203,8 +203,29 @@ def step_3_check_env() -> dict[str, str]:
             _fail("Docker not found")
             status["docker"] = "not_found"
 
-    # libmagic
-    if ctypes.util.find_library("magic"):
+    # libmagic — ctypes.util.find_library misses Homebrew paths on Apple Silicon,
+    # so also check common install locations directly
+    libmagic_found = bool(ctypes.util.find_library("magic"))
+    if not libmagic_found:
+        for candidate in [
+            "/opt/homebrew/lib/libmagic.dylib",
+            "/usr/local/lib/libmagic.dylib",
+            "/usr/lib/libmagic.so.1",
+            "/usr/lib/x86_64-linux-gnu/libmagic.so.1",
+        ]:
+            if Path(candidate).exists():
+                libmagic_found = True
+                break
+    if not libmagic_found:
+        # Also check if brew knows about it
+        try:
+            result = _run("brew list libmagic", capture=True, check=False)
+            if result.returncode == 0:
+                libmagic_found = True
+        except FileNotFoundError:
+            pass
+
+    if libmagic_found:
         _ok("libmagic found")
         status["libmagic"] = "ok"
     else:
@@ -231,13 +252,18 @@ def step_3_check_env() -> dict[str, str]:
 def step_4_install_deps() -> None:
     _header(4, "Install Dependencies")
 
+    already_installed = False
     try:
         result = _run("slimclaw --help", capture=True, check=False)
         if result.returncode == 0:
-            _ok("Already installed")
-            return
+            already_installed = True
     except FileNotFoundError:
         pass
+
+    if already_installed:
+        _ok("slimclaw already installed")
+        if not _confirm("Reinstall?", default=False):
+            return
 
     print(f"  Running pip install -e .[dev]...\n")
     try:
