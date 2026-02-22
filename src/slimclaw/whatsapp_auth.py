@@ -160,7 +160,9 @@ async def authenticate() -> None:
     print("(Open WhatsApp > Settings > Linked Devices > Link a Device)\n")
 
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, client.connect)
+    # Fire-and-forget: client.connect() is neonize's Go event loop and blocks forever.
+    # We just need to wait for the ConnectedEv callback to set the event.
+    loop.run_in_executor(None, client.connect)
     await connected.wait()
 
     # Clean up QR file
@@ -170,6 +172,13 @@ async def authenticate() -> None:
         pass
 
     print("Credentials saved. You can now start SlimClaw.")
+
+    # Disconnect and force exit — neonize's Go thread won't stop on its own
+    try:
+        client.disconnect()
+    except Exception:
+        pass
+    os._exit(0)
 
 
 def run() -> None:
