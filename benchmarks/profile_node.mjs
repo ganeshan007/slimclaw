@@ -1,5 +1,5 @@
 /**
- * Memory profiling for nanoclaw (Node.js/TypeScript).
+ * Memory profiling for the Node.js/TypeScript baseline (NanoClaw).
  *
  * Measures the same things as profile_python.py for fair comparison:
  * 1. Bare Node.js interpreter baseline
@@ -15,7 +15,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(__dirname, '..', '..', 'nanoclaw');  // nanoclaw/ (TS version)
+const projectRoot = join(__dirname, '..', '..', 'nanoclaw');  // Node.js baseline for comparison
 const distDir = join(projectRoot, 'dist');
 
 // Change to project root so config.ts resolves correctly

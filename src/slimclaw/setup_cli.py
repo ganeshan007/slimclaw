@@ -307,7 +307,7 @@ def step_5_container(status: dict[str, str]) -> None:
 
     # Build container image
     try:
-        _run("docker inspect nanoclaw-agent:latest", capture=True)
+        _run("docker inspect slimclaw-agent:latest", capture=True)
         _ok("Container image exists")
         if not _confirm("Rebuild container image?", default=False):
             return
@@ -316,10 +316,10 @@ def step_5_container(status: dict[str, str]) -> None:
 
     build_script = Path("container/build.sh")
     if not build_script.exists():
-        nanoclaw_container = Path("../nanoclaw/container")
-        if nanoclaw_container.exists():
+        shared_container = Path("../nanoclaw/container")
+        if shared_container.exists():
             _warn("container/ not found — symlinking from NanoClaw")
-            os.symlink(str(nanoclaw_container.resolve()), "container")
+            os.symlink(str(shared_container.resolve()), "container")
         else:
             _fail("container/build.sh not found and NanoClaw not nearby")
             sys.exit(1)
@@ -327,8 +327,10 @@ def step_5_container(status: dict[str, str]) -> None:
     print(f"  Building container image (this takes a few minutes)...\n")
     try:
         _run("./container/build.sh", timeout=600)
+        # The shared build script tags as nanoclaw-agent — re-tag for slimclaw
+        _run("docker tag nanoclaw-agent:latest slimclaw-agent:latest", capture=True, check=False)
         print()
-        _ok("Container image built")
+        _ok("Container image built (slimclaw-agent:latest)")
     except subprocess.CalledProcessError:
         print()
         _fail("Container build failed — check output above")
@@ -600,7 +602,7 @@ def step_13_verify(bot_name: str) -> None:
 
     # Container image
     try:
-        _run("docker inspect nanoclaw-agent:latest", capture=True)
+        _run("docker inspect slimclaw-agent:latest", capture=True)
         checks.append(("Container image", True))
     except (subprocess.CalledProcessError, FileNotFoundError):
         checks.append(("Container image", False))

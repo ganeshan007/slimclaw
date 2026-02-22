@@ -101,7 +101,7 @@ src/slimclaw/
 - **`__slots__` dataclasses** — 19% less per-object memory than regular dataclasses
 - **Lazy structlog import** — deferred until first log call, saves 20 MB startup RSS
 - **SQLite WAL mode + autocommit** — no per-statement `commit()` overhead
-- **Shared container image** — uses the same `nanoclaw-agent:latest` Docker image
+- **Shared container image** — uses the same `slimclaw-agent:latest` Docker image
 
 ## What It Does
 
@@ -149,7 +149,7 @@ Build it once:
 Symlink it if you already have NanoClaw:
 
 ```bash
-ln -s ../nanoclaw/container container
+ln -s ../nanoclaw/container container  # shared build infrastructure
 ```
 
 ## Development

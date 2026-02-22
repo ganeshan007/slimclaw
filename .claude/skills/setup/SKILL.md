@@ -177,7 +177,7 @@ slimclaw --help 2>/dev/null || python3 -m slimclaw --help
 
 If `container/` doesn't exist and NanoClaw is installed nearby:
 ```bash
-ln -s ../nanoclaw/container container
+ln -s ../nanoclaw/container container  # shared build infrastructure
 ./container/build.sh
 ```
 
@@ -187,7 +187,7 @@ ln -s ../nanoclaw/container container
 
 **Test the image:**
 ```bash
-echo '{}' | docker run -i --entrypoint /bin/echo nanoclaw-agent:latest "OK"
+echo '{}' | docker run -i --entrypoint /bin/echo slimclaw-agent:latest "OK"
 ```
 
 ## 6. Claude Authentication
@@ -399,7 +399,7 @@ print(count)
 " 2>/dev/null || echo "0"
 
 echo -n "CONTAINER_IMAGE: "
-echo '{}' | docker run -i --entrypoint /bin/echo nanoclaw-agent:latest "OK" 2>/dev/null || echo "MISSING"
+echo '{}' | docker run -i --entrypoint /bin/echo slimclaw-agent:latest "OK" 2>/dev/null || echo "MISSING"
 
 echo -n "MOUNT_ALLOWLIST: "
 [ -f ~/.config/slimclaw/mount-allowlist.json ] && echo "OK" || echo "MISSING"

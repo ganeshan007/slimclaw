@@ -14,7 +14,7 @@ _env_config = read_env_file([
 ])
 
 ASSISTANT_NAME: str = (
-    os.environ.get("ASSISTANT_NAME") or _env_config.get("ASSISTANT_NAME") or "TARS"
+    os.environ.get("ASSISTANT_NAME") or _env_config.get("ASSISTANT_NAME") or "andy"
 )
 ASSISTANT_HAS_OWN_NUMBER: bool = (
     os.environ.get("ASSISTANT_HAS_OWN_NUMBER") or _env_config.get("ASSISTANT_HAS_OWN_NUMBER")
@@ -36,7 +36,7 @@ GROUPS_DIR: Path = (PROJECT_ROOT / "groups").resolve()
 DATA_DIR: Path = (PROJECT_ROOT / "data").resolve()
 MAIN_GROUP_FOLDER: str = "main"
 
-CONTAINER_IMAGE: str = os.environ.get("CONTAINER_IMAGE") or "nanoclaw-agent:latest"
+CONTAINER_IMAGE: str = os.environ.get("CONTAINER_IMAGE") or "slimclaw-agent:latest"
 CONTAINER_TIMEOUT: int = int(os.environ.get("CONTAINER_TIMEOUT") or "1800000")
 CONTAINER_MAX_OUTPUT_SIZE: int = int(os.environ.get("CONTAINER_MAX_OUTPUT_SIZE") or "10485760")
 IDLE_TIMEOUT: int = int(os.environ.get("IDLE_TIMEOUT") or "1800000")
