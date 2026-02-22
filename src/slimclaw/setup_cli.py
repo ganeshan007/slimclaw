@@ -399,16 +399,12 @@ def step_7_whatsapp_auth(status: dict[str, str]) -> None:
 
         try:
             _run("slimclaw-auth", timeout=300)
-            _ok("WhatsApp authenticated")
-            return
-        except subprocess.CalledProcessError:
-            _fail("Authentication failed")
-        except subprocess.TimeoutExpired:
-            _fail("Authentication timed out")
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass  # slimclaw-auth uses SIGKILL to exit, which looks like a crash
 
-        # Check if auth actually succeeded despite the error/timeout
+        # Check if auth succeeded by looking for the credentials file
         if Path("store/auth/neonize.db").exists():
-            _ok("Credentials found — authentication may have succeeded")
+            _ok("WhatsApp authenticated")
             return
 
         if not _confirm("Retry authentication?"):

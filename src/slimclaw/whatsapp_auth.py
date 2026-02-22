@@ -195,10 +195,12 @@ async def authenticate() -> None:
         pass
 
     print("Credentials saved. You can now start SlimClaw.\n")
+    sys.stdout.flush()
 
-    # Force exit immediately — client.disconnect() can hang during active
-    # history sync, and neonize's Go thread won't stop on its own
-    os._exit(0)
+    # Force kill — os._exit(0) doesn't reliably terminate the Go runtime.
+    # SIGKILL is the only signal that cannot be caught or ignored.
+    import signal
+    os.kill(os.getpid(), signal.SIGKILL)
 
 
 def run() -> None:
