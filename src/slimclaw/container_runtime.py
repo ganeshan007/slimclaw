@@ -1,8 +1,11 @@
+import shutil
 import subprocess
 
 from slimclaw.logger import logger
 
-CONTAINER_RUNTIME_BIN = "docker"
+# Resolve full path to docker — bare "docker" fails when PATH is limited
+# (e.g. launchd services, subprocesses without shell profile)
+CONTAINER_RUNTIME_BIN = shutil.which("docker") or "/usr/local/bin/docker"
 
 
 def readonly_mount_args(host_path: str, container_path: str) -> list[str]:
