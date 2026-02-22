@@ -39,9 +39,9 @@ You are ChosenName, a personal assistant.
 
 If the user picks "TARS" (or accepts the default), no file changes are needed — everything already uses TARS.
 
-## 2. Choose How to Connect
+## 2. Choose Your App
 
-AskUserQuestion: How do you want to talk to {BotName}?
+AskUserQuestion: Which app do you want to use with {BotName}?
 - **WhatsApp** (recommended) — message from your phone, built-in support
 - **Telegram** — Telegram bot integration
 - **Discord** — Discord bot integration
@@ -51,35 +51,35 @@ AskUserQuestion: How do you want to talk to {BotName}?
 
 Continue to step 3. The rest of the setup handles WhatsApp natively.
 
-### If another channel (Telegram, Discord, Terminal, or any other)
+### If another app (Telegram, Discord, Terminal, or any other)
 
-Check if a skill exists for that channel:
+Check if a skill exists for that app:
 
 ```bash
-ls .claude/skills/add-{channel}/SKILL.md 2>/dev/null && echo "SKILL_EXISTS" || echo "NOT_FOUND"
+ls .claude/skills/add-{app}/SKILL.md 2>/dev/null && echo "SKILL_EXISTS" || echo "NOT_FOUND"
 ```
 
-Where `{channel}` is the lowercase channel name (e.g. `telegram`, `discord`, `terminal`).
+Where `{app}` is the lowercase app name (e.g. `telegram`, `discord`, `terminal`).
 
 **If skill exists:** Tell the user:
 
-> "Great — we'll set up the base infrastructure first (dependencies, container, Claude auth), then run `/add-{channel}` to configure {Channel}."
+> "Great — we'll set up the base infrastructure first (dependencies, container, Claude auth), then run `/add-{app}` to configure {App}."
 
 Continue with steps 3–6 (environment, dependencies, container, Claude auth). **Skip steps 7–10** (WhatsApp auth and WhatsApp-specific configuration). After step 6, tell the user:
 
-> "Base setup complete! Now run `/add-{channel}` to finish setting up {Channel}."
+> "Base setup complete! Now run `/add-{app}` to finish setting up {App}."
 
 Then proceed to step 11 (mount allowlist), step 12 (start service), and step 13 (verify).
 
 **If skill doesn't exist:** Tell the user:
 
-> "The {Channel} channel doesn't have a skill yet. SlimClaw uses a Skills over Features approach — anyone can add a channel by creating `.claude/skills/add-{channel}/SKILL.md`.
+> "{App} doesn't have a skill yet. SlimClaw uses a Skills over Features approach — anyone can add an app by creating `.claude/skills/add-{app}/SKILL.md`.
 >
-> To contribute this skill, see `/customize` for the Channel protocol pattern — a new channel needs a Python class implementing `connect()`, `send_message()`, `is_connected()`, `owns_jid()`, `disconnect()`, and `set_typing()` in `src/slimclaw/channels/{channel}.py`.
+> To contribute this skill, see `/customize` for the Channel protocol pattern — a new app needs a Python class implementing `connect()`, `send_message()`, `is_connected()`, `owns_jid()`, `disconnect()`, and `set_typing()` in `src/slimclaw/channels/{app}.py`.
 >
 > For now, would you like to set up with WhatsApp instead?"
 
-Re-ask the channel question. If they choose WhatsApp, continue normally. If they insist on the unavailable channel, finish the base setup (steps 3–6) and let them know they can add the channel later with `/customize`.
+Re-ask the question. If they choose WhatsApp, continue normally. If they insist on the unavailable app, finish the base setup (steps 3–6) and let them know they can add the app later with `/customize`.
 
 ## 3. Check Environment
 
@@ -206,7 +206,7 @@ Do NOT ask the user to paste the token into the chat. Just tell them what to do,
 
 ---
 
-**If the user chose a non-WhatsApp channel in step 2** and the skill exists: skip to step 11 (Mount Allowlist) now, and tell the user to run `/add-{channel}` to complete channel setup.
+**If the user chose a non-WhatsApp app in step 2** and the skill exists: skip to step 11 (Mount Allowlist) now, and tell the user to run `/add-{app}` to complete app setup.
 
 ---
 
