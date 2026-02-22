@@ -160,8 +160,12 @@ async def authenticate() -> None:
 
     @client.event(ConnectedEv)
     def on_connected(client_ref, event):
+        # This runs in the Go thread — we can't rely on asyncio resuming
+        # because the Go runtime floods the event loop with sync callbacks.
+        # Handle everything here and kill the process directly.
+        import signal
+
         print("\nAuthenticated successfully!")
-        print("Syncing account data (this may take a moment)...")
         logger.info("WhatsApp authentication successful")
 
         # Write success page
@@ -170,37 +174,29 @@ async def authenticate() -> None:
         except Exception:
             pass
 
-        # Callback runs in Go thread — must use call_soon_threadsafe
-        # to wake up the asyncio event loop
-        loop.call_soon_threadsafe(connected.set)
+        # Clean up QR file
+        try:
+            qr_html_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+        print("Credentials saved. You can now start SlimClaw.\n")
+        sys.stdout.flush()
+
+        # SIGKILL from the Go thread — the only reliable way to terminate
+        # because the Go runtime keeps the process alive indefinitely
+        os.kill(os.getpid(), signal.SIGKILL)
 
     print("Scan the QR code with WhatsApp to authenticate...")
     print("(Open WhatsApp > Settings > Linked Devices > Link a Device)")
     print("Waiting for QR code...\n")
 
-    # Fire-and-forget: client.connect() is neonize's Go event loop and blocks forever.
-    # We just need to wait for the ConnectedEv callback to set the event.
+    # client.connect() is neonize's Go event loop — blocks forever.
+    # The on_connected callback will SIGKILL the process when auth succeeds.
+    # We await forever here; the process will be killed from the callback.
     loop.run_in_executor(None, client.connect)
-    await connected.wait()
-
-    # Give neonize a few seconds to finish the initial sync (prekeys, push names)
-    # before killing the Go thread — prevents incomplete state
-    print("Waiting for initial sync to complete...")
-    await asyncio.sleep(5)
-
-    # Clean up QR file
-    try:
-        qr_html_path.unlink(missing_ok=True)
-    except Exception:
-        pass
-
-    print("Credentials saved. You can now start SlimClaw.\n")
-    sys.stdout.flush()
-
-    # Force kill — os._exit(0) doesn't reliably terminate the Go runtime.
-    # SIGKILL is the only signal that cannot be caught or ignored.
-    import signal
-    os.kill(os.getpid(), signal.SIGKILL)
+    await connected.wait()  # fallback if SIGKILL somehow fails
+    sys.exit(0)
 
 
 def run() -> None:
