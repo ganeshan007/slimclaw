@@ -158,15 +158,18 @@ async def authenticate() -> None:
 
     loop = asyncio.get_event_loop()
 
+    # Capture references for the Go thread callback — module-level names
+    # may not be resolvable from neonize's Go callback context
+    import signal
+    _pid = os.getpid()
+    _sigkill = signal.SIGKILL
+    _kill = os.kill
+
     @client.event(ConnectedEv)
     def on_connected(client_ref, event):
         # This runs in the Go thread — we can't rely on asyncio resuming
         # because the Go runtime floods the event loop with sync callbacks.
-        # Handle everything here and kill the process directly.
-        import signal
-
         print("\nAuthenticated successfully!")
-        logger.info("WhatsApp authentication successful")
 
         # Write success page
         try:
@@ -174,18 +177,11 @@ async def authenticate() -> None:
         except Exception:
             pass
 
-        # Clean up QR file
-        try:
-            qr_html_path.unlink(missing_ok=True)
-        except Exception:
-            pass
-
         print("Credentials saved. You can now start SlimClaw.\n")
         sys.stdout.flush()
 
         # SIGKILL from the Go thread — the only reliable way to terminate
-        # because the Go runtime keeps the process alive indefinitely
-        os.kill(os.getpid(), signal.SIGKILL)
+        _kill(_pid, _sigkill)
 
     print("Scan the QR code with WhatsApp to authenticate...")
     print("(Open WhatsApp > Settings > Linked Devices > Link a Device)")
