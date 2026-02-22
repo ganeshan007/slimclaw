@@ -386,6 +386,11 @@ def step_7_whatsapp_auth(status: dict[str, str]) -> None:
         _ok("WhatsApp credentials exist")
         if not _confirm("Re-authenticate?", default=False):
             return
+        # Delete old credentials so neonize generates a fresh QR code
+        auth_db = Path("store/auth/neonize.db")
+        if auth_db.exists():
+            auth_db.unlink()
+            _ok("Old credentials deleted")
 
     print(f"  {DIM}Launching WhatsApp auth (QR code will open in browser)...{RESET}")
     print(f"  Scan the QR code: WhatsApp → Settings → Linked Devices → Link a Device")
