@@ -241,7 +241,18 @@ def step_4_install_deps() -> None:
 
     print(f"  {DIM}Running pip install -e .[dev]...{RESET}")
     try:
-        _run("pip install -e '.[dev]'", timeout=300)
+        proc = subprocess.Popen(
+            ["pip", "install", "-e", ".[dev]"],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1,
+        )
+        for line in proc.stdout:
+            line = line.rstrip()
+            if line:
+                print(f"  {DIM}  {line}{RESET}")
+        proc.wait()
+        if proc.returncode != 0:
+            raise subprocess.CalledProcessError(proc.returncode, "pip install")
         _ok("Dependencies installed")
     except subprocess.CalledProcessError:
         _fail("pip install failed")
@@ -299,7 +310,18 @@ def step_5_container(status: dict[str, str]) -> None:
 
     print(f"  {DIM}Building container image (this takes a few minutes)...{RESET}")
     try:
-        _run("./container/build.sh", timeout=600)
+        proc = subprocess.Popen(
+            ["./container/build.sh"],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1,
+        )
+        for line in proc.stdout:
+            line = line.rstrip()
+            if line:
+                print(f"  {DIM}  {line}{RESET}")
+        proc.wait()
+        if proc.returncode != 0:
+            raise subprocess.CalledProcessError(proc.returncode, "./container/build.sh")
         _ok("Container image built")
     except subprocess.CalledProcessError:
         _fail("Container build failed — check output above")
