@@ -416,13 +416,15 @@ def step_8_channel_type(bot_name: str) -> dict:
     _header(8, "Set Up Main Channel")
 
     print(f"  {BOLD}What is the main channel?{RESET}")
-    print(f"  {DIM}Your private admin chat with {bot_name}. No trigger word needed here —{RESET}")
-    print(f"  {DIM}every message goes straight to {bot_name}. Use it to manage the bot,{RESET}")
-    print(f"  {DIM}register new groups, and schedule tasks.{RESET}")
+    print(f"  {DIM}A private WhatsApp chat where you talk to {bot_name} directly.{RESET}")
+    print(f"  {DIM}Every message here goes to {bot_name} — no @{bot_name} prefix needed.{RESET}")
     print()
-    print(f"  {DIM}To use {bot_name} in group chats with other people, you'll add those{RESET}")
-    print(f"  {DIM}groups later from the main channel (just say \"join Family Chat\").{RESET}")
-    print(f"  {DIM}Group members invoke {bot_name} with @{bot_name}.{RESET}")
+    print(f"  {BOLD}How to access it:{RESET}")
+    print(f"  {DIM}• Self-chat: Open WhatsApp → tap your own name at the top of chats{RESET}")
+    print(f"  {DIM}• Solo group: Create a WhatsApp group with just yourself{RESET}")
+    print()
+    print(f"  {DIM}Want {bot_name} in group chats with other people? You'll add those{RESET}")
+    print(f"  {DIM}later — just tell {bot_name} \"join Family Chat\" from the main channel.{RESET}")
     print()
 
     choice = _choose("Where should your main channel be?", [
@@ -434,56 +436,90 @@ def step_8_channel_type(bot_name: str) -> dict:
     return {"type": ["self", "group", "dm"][choice]}
 
 
-def step_9_discover_group(channel_info: dict) -> tuple[str, str]:
+def step_9_discover_group(channel_info: dict, bot_name: str) -> tuple[str, str]:
     """Returns (jid, display_name)."""
-    _header(9, "Discover & Select Group")
+    _header(9, "Connect Main Channel")
 
     if channel_info["type"] == "self":
-        phone = _prompt("Your WhatsApp phone number (with country code, no +)")
+        phone = _prompt("Your WhatsApp phone number (country code + number, no + or spaces, e.g. 14155551234)")
         jid = f"{phone}@s.whatsapp.net"
-        _ok(f"JID: {jid}")
+        _ok(f"Self-chat registered for +{phone}")
         return jid, "Self-chat"
 
     if channel_info["type"] == "dm":
-        phone = _prompt("Bot's WhatsApp phone number (with country code, no +)")
+        phone = _prompt("Bot's WhatsApp phone number (country code + number, no + or spaces)")
         jid = f"{phone}@s.whatsapp.net"
-        _ok(f"JID: {jid}")
+        _ok(f"DM registered for +{phone}")
         return jid, "DM with bot"
 
-    # Group — need to sync
-    print(f"  {DIM}Syncing WhatsApp groups (starting slimclaw briefly)...{RESET}")
+    # Group — need to sync WhatsApp groups
+    print(f"  {DIM}Syncing your WhatsApp groups...{RESET}")
     try:
-        _run("timeout 30 slimclaw 2>/dev/null || true", check=False, timeout=45)
+        _run(f"{sys.executable} -m slimclaw", check=False, capture=True, timeout=30)
     except subprocess.TimeoutExpired:
         pass
 
     db_path = Path("store/messages.db")
-    if not db_path.exists():
-        _fail("No database found — WhatsApp may not have synced")
-        jid = _prompt("Enter the group JID manually (e.g. 123456@g.us)")
-        return jid, jid
+    groups_found = []
+    if db_path.exists():
+        conn = sqlite3.connect(str(db_path))
+        groups_found = conn.execute(
+            "SELECT jid, name FROM chats WHERE is_group = 1 AND jid != '__group_sync__' ORDER BY last_message_time DESC LIMIT 20"
+        ).fetchall()
+        conn.close()
 
-    conn = sqlite3.connect(str(db_path))
-    rows = conn.execute(
-        "SELECT jid, name FROM chats WHERE is_group = 1 AND jid != '__group_sync__' ORDER BY last_message_time DESC LIMIT 20"
-    ).fetchall()
-    conn.close()
+    if groups_found:
+        options = [name for _, name in groups_found]
+        choice = _choose("Which WhatsApp group should be your main channel?", options)
+        jid, name = groups_found[choice]
+        _ok(f"Selected: {name}")
+        return jid, name
 
-    if not rows:
-        _warn("No groups found")
-        jid = _prompt("Enter the group JID manually")
-        return jid, jid
+    # No groups synced — ask for group name and try to find it
+    _warn("Couldn't sync groups yet")
+    print(f"  {DIM}This can happen on first connection. You have two options:{RESET}")
+    print()
+    choice = _choose("How to proceed?", [
+        f"Create a new solo group — I'll make one on WhatsApp and come back",
+        f"Skip for now — I'll start {bot_name} and register a group later",
+    ])
 
-    options = [f"{name} {DIM}({jid}){RESET}" for jid, name in rows]
-    options.append("Enter JID manually")
+    if choice == 0:
+        print()
+        print(f"  {BOLD}Instructions:{RESET}")
+        print(f"  1. Open WhatsApp on your phone")
+        print(f"  2. Create a new group (add any contact, then remove them)")
+        print(f"  3. Name it something like \"{bot_name}\" or \"My Assistant\"")
+        print(f"  4. Come back here and press Enter")
+        print()
+        _prompt("Press Enter when your group is created")
 
-    choice = _choose("Select your group:", options)
+        # Re-sync
+        print(f"  {DIM}Syncing again...{RESET}")
+        try:
+            _run(f"{sys.executable} -m slimclaw", check=False, capture=True, timeout=30)
+        except subprocess.TimeoutExpired:
+            pass
 
-    if choice == len(options) - 1:
-        jid = _prompt("Enter the group JID")
-        return jid, jid
+        if db_path.exists():
+            conn = sqlite3.connect(str(db_path))
+            groups_found = conn.execute(
+                "SELECT jid, name FROM chats WHERE is_group = 1 AND jid != '__group_sync__' ORDER BY last_message_time DESC LIMIT 20"
+            ).fetchall()
+            conn.close()
 
-    return rows[choice][0], rows[choice][1]
+        if groups_found:
+            options = [name for _, name in groups_found]
+            choice = _choose("Which group?", options)
+            jid, name = groups_found[choice]
+            _ok(f"Selected: {name}")
+            return jid, name
+
+        _warn("Still no groups found — you can register one later from the main channel")
+        return "", ""
+
+    # Skip
+    return "", ""
 
 
 def step_10_register(jid: str, bot_name: str) -> None:
@@ -681,11 +717,14 @@ def run() -> None:
     if app == "whatsapp":
         step_7_whatsapp_auth(status)
         channel_info = step_8_channel_type(bot_name)
-        jid, channel_name = step_9_discover_group(channel_info)
-        step_10_register(jid, bot_name)
-        print(f"\n  {BOLD}Your main channel:{RESET} {channel_name}")
-        print(f"  {DIM}Send messages here to talk to {bot_name} — no @{bot_name} prefix needed.{RESET}")
-        print(f"  {DIM}To add {bot_name} to other groups, say \"join <group name>\" here.{RESET}")
+        jid, channel_name = step_9_discover_group(channel_info, bot_name)
+        if jid:
+            step_10_register(jid, bot_name)
+            print(f"\n  {BOLD}Your main channel:{RESET} {channel_name}")
+            print(f"  {DIM}Open this chat on WhatsApp to talk to {bot_name} — no @{bot_name} needed.{RESET}")
+            print(f"  {DIM}To add {bot_name} to other groups, say \"join <group name>\" here.{RESET}")
+        else:
+            _warn(f"No main channel registered — start {bot_name} and register a group later")
     elif app.startswith("skill:"):
         skill = app.removeprefix("skill:")
         print(f"\n  {CYAN}Base setup complete!{RESET}")
