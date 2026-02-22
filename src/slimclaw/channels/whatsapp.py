@@ -112,10 +112,9 @@ class WhatsAppChannel:
 
         @client.event(MessageEv)
         def on_message(client_ref, event):
-            try:
-                self._handle_message(event)
-            except Exception as err:
-                logger.error("Error handling WhatsApp message", error=str(err))
+            # neonize callbacks run in a Go thread — dispatch to the asyncio
+            # thread so SQLite and other state are accessed safely.
+            self._loop.call_soon_threadsafe(self._handle_message_safe, event)
 
         # Start client in a background thread (neonize is synchronous Go under the hood).
         # client.connect() blocks forever (it's the Go event loop), so we fire-and-forget
@@ -134,20 +133,32 @@ class WhatsAppChannel:
             return f"{user}@{server}"
         return str(jid_obj)
 
+    def _handle_message_safe(self, event) -> None:
+        """Wrapper called on the asyncio thread via call_soon_threadsafe."""
+        try:
+            self._handle_message(event)
+        except Exception as err:
+            logger.error("Error handling WhatsApp message", error=str(err))
+
     def _handle_message(self, event) -> None:
         msg = event.Message
         info = event.Info
 
         chat_jid_obj = info.MessageSource.Chat
         chat_jid = self._jid_to_string(chat_jid_obj)
+        logger.debug("WA message event", chat_jid=chat_jid)
         if not chat_jid or chat_jid == "status@broadcast":
             return
 
         from datetime import datetime, timezone
 
         timestamp_epoch = int(info.Timestamp)
-        # Guard against absurd timestamps from history sync (e.g. year 58112)
+        # neonize may return milliseconds instead of seconds — normalize
+        if timestamp_epoch > 1e12:
+            timestamp_epoch = timestamp_epoch // 1000
+        # Guard against absurd timestamps from history sync
         if timestamp_epoch > 4102444800 or timestamp_epoch <= 0:  # > year 2100 or <= 0
+            logger.debug("Skipping message with bad timestamp", epoch=timestamp_epoch, chat_jid=chat_jid)
             return
         timestamp = datetime.fromtimestamp(timestamp_epoch, tz=timezone.utc).isoformat()
 
@@ -156,6 +167,7 @@ class WhatsAppChannel:
 
         groups = self.opts.registered_groups()
         if chat_jid not in groups:
+            logger.debug("Ignoring message from unregistered chat", chat_jid=chat_jid, registered=list(groups.keys()))
             return
 
         # Extract text content
@@ -174,7 +186,11 @@ class WhatsAppChannel:
 
         sender_obj = info.MessageSource.Sender
         sender = self._jid_to_string(sender_obj) if sender_obj else chat_jid
-        sender_name = str(info.PushName) if info.PushName else sender.split("@")[0]
+        try:
+            push_name = getattr(info, "PushName", None) or getattr(info, "Pushname", None)
+            sender_name = str(push_name) if push_name else sender.split("@")[0]
+        except Exception:
+            sender_name = sender.split("@")[0]
         from_me = bool(info.MessageSource.IsFromMe)
 
         is_bot_message = (
