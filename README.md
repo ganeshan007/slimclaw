@@ -107,12 +107,12 @@ src/slimclaw/
 
 ## Usage
 
-Talk to your assistant (default trigger: `@Andy`):
+Talk to your assistant (default trigger: `@TARS`):
 
 ```
-@Andy summarize the last week of messages
-@Andy schedule a daily standup reminder at 9am
-@Andy what's the weather in San Francisco
+@TARS summarize the last week of messages
+@TARS schedule a daily standup reminder at 9am
+@TARS what's the weather in San Francisco
 ```
 
 From the main channel (no trigger needed):

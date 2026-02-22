@@ -15,11 +15,11 @@ MAIN_GROUP = RegisteredGroup(
     added_at="2024-01-01T00:00:00.000Z",
 )
 OTHER_GROUP = RegisteredGroup(
-    name="Other", folder="other-group", trigger="@Andy",
+    name="Other", folder="other-group", trigger="@TARS",
     added_at="2024-01-01T00:00:00.000Z",
 )
 THIRD_GROUP = RegisteredGroup(
-    name="Third", folder="third-group", trigger="@Andy",
+    name="Third", folder="third-group", trigger="@TARS",
     added_at="2024-01-01T00:00:00.000Z",
 )
 
@@ -225,7 +225,7 @@ class TestRegisterGroupAuth:
     async def test_non_main_cannot_register(self):
         await process_task_ipc(
             {"type": "register_group", "jid": "new@g.us", "name": "New Group",
-             "folder": "new-group", "trigger": "@Andy"},
+             "folder": "new-group", "trigger": "@TARS"},
             "other-group", False, deps,
         )
         assert groups.get("new@g.us") is None
@@ -234,7 +234,7 @@ class TestRegisterGroupAuth:
     async def test_main_can_register(self):
         await process_task_ipc(
             {"type": "register_group", "jid": "new@g.us", "name": "New Group",
-             "folder": "new-group", "trigger": "@Andy"},
+             "folder": "new-group", "trigger": "@TARS"},
             "main", True, deps,
         )
         group = get_registered_group("new@g.us")

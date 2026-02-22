@@ -187,9 +187,9 @@ def main():
 
     # DB already has 10000 messages from last iteration
     for label, fn in [
-        ("getMessagesSince (all)", lambda: get_messages_since("bench@g.us", "", "Andy")),
-        ("getMessagesSince (last 100)", lambda: get_messages_since("bench@g.us", "2024-01-01T02:43:19.000Z", "Andy")),
-        ("getNewMessages (1 group)", lambda: get_new_messages(["bench@g.us"], "", "Andy")),
+        ("getMessagesSince (all)", lambda: get_messages_since("bench@g.us", "", "TARS")),
+        ("getMessagesSince (last 100)", lambda: get_messages_since("bench@g.us", "2024-01-01T02:43:19.000Z", "TARS")),
+        ("getNewMessages (1 group)", lambda: get_new_messages(["bench@g.us"], "", "TARS")),
     ]:
         force_gc()
         rss_before = get_rss_mb()

@@ -14,7 +14,7 @@ _env_config = read_env_file([
 ])
 
 ASSISTANT_NAME: str = (
-    os.environ.get("ASSISTANT_NAME") or _env_config.get("ASSISTANT_NAME") or "Andy"
+    os.environ.get("ASSISTANT_NAME") or _env_config.get("ASSISTANT_NAME") or "TARS"
 )
 ASSISTANT_HAS_OWN_NUMBER: bool = (
     os.environ.get("ASSISTANT_HAS_OWN_NUMBER") or _env_config.get("ASSISTANT_HAS_OWN_NUMBER")

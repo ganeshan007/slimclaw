@@ -125,7 +125,7 @@ systemctl --user restart slimclaw
 
 User: "Add Telegram as an input channel"
 
-1. Ask: "Should Telegram use the same @Andy trigger, or a different one?"
+1. Ask: "Should Telegram use the same @TARS trigger, or a different one?"
 2. Ask: "Should Telegram messages create separate conversation contexts, or share with WhatsApp groups?"
 3. Create `src/slimclaw/channels/telegram.py` implementing the `Channel` protocol (see `src/slimclaw/types.py` and `src/slimclaw/channels/whatsapp.py`)
 4. Add the channel to `run()` in `src/slimclaw/main.py`

@@ -11,9 +11,37 @@ Run setup steps automatically. Only pause when user action is required (WhatsApp
 
 **UX Note:** Use `AskUserQuestion` for all user-facing questions.
 
-## 1. Check Environment
+## 1. Welcome & Name Your Bot
 
-Verify prerequisites are installed:
+Start with personalization — this is the user's assistant, let them own it.
+
+AskUserQuestion: What would you like to name your bot? This name becomes the trigger word in group chats (e.g. @TARS). Default: **TARS**.
+
+Store the chosen name for use in all subsequent steps. If the name differs from "TARS":
+
+1. Update `src/slimclaw/config.py` — change the default in the `ASSISTANT_NAME` fallback:
+```python
+ASSISTANT_NAME: str = (
+    os.environ.get("ASSISTANT_NAME") or _env_config.get("ASSISTANT_NAME") or "ChosenName"
+)
+```
+
+2. Update `groups/global/CLAUDE.md` — replace the heading and persona line:
+```markdown
+# ChosenName
+
+You are ChosenName, a personal assistant.
+```
+
+3. Update `groups/main/CLAUDE.md` — same heading and persona line, plus any trigger references (`"trigger": "@ChosenName"`).
+
+4. Update `README.md` — replace `@TARS` with `@ChosenName` in the usage examples.
+
+If the user picks "TARS" (or accepts the default), no file changes are needed — everything already uses TARS.
+
+## 2. Check Environment
+
+Verify prerequisites:
 
 ```bash
 echo "=== SlimClaw Environment Check ==="
@@ -55,7 +83,7 @@ echo -n "PLATFORM: "
 uname -s
 ```
 
-- If HAS_AUTH=true, note that WhatsApp auth exists, offer to skip step 5
+- If HAS_AUTH=true, note that WhatsApp auth exists, offer to skip step 6
 - If HAS_REGISTERED_GROUPS=true, note existing config, offer to skip or reconfigure
 
 **If PYTHON missing or TOO_OLD:**
@@ -70,7 +98,7 @@ Install automatically:
 - macOS: `brew install libmagic`
 - Linux: `sudo apt-get install libmagic1`
 
-## 2. Install Dependencies
+## 3. Install Dependencies
 
 ```bash
 cd PROJECT_ROOT
@@ -87,17 +115,17 @@ Verify the install worked:
 slimclaw --help 2>/dev/null || python3 -m slimclaw --help
 ```
 
-## 3. Container Runtime
+## 4. Container Runtime
 
-### 3a. Install/Start Docker
+### 4a. Install/Start Docker
 
-- DOCKER=running -> continue to 3b
+- DOCKER=running -> continue to 4b
 - DOCKER=installed_not_running -> start Docker: `open -a Docker` (macOS) or `sudo systemctl start docker` (Linux). Wait 15s, re-check with `docker info`.
 - DOCKER=not_found -> **ask the user for confirmation before installing.** Tell them Docker is required for running agents.
   - macOS: `brew install --cask docker`, then `open -a Docker`
   - Linux: `curl -fsSL https://get.docker.com | sh && sudo usermod -aG docker $USER`
 
-### 3b. Build Container Image
+### 4b. Build Container Image
 
 ```bash
 ./container/build.sh
@@ -118,9 +146,9 @@ ln -s ../nanoclaw/container container
 echo '{}' | docker run -i --entrypoint /bin/echo nanoclaw-agent:latest "OK"
 ```
 
-## 4. Claude Authentication
+## 5. Claude Authentication
 
-If HAS_ENV=true from step 1, read `.env` and check if it already has `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`. If so, confirm with user: "You already have Claude credentials configured. Want to keep them or reconfigure?" If keeping, skip to step 5.
+If HAS_ENV=true from step 2, read `.env` and check if it already has `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`. If so, confirm with user: "You already have Claude credentials configured. Want to keep them or reconfigure?" If keeping, skip to step 6.
 
 AskUserQuestion: Claude subscription (Pro/Max) vs Anthropic API key?
 
@@ -134,9 +162,9 @@ Do NOT ask the user to paste the token into the chat. Just tell them what to do,
 
 **API key:** Tell the user to add `ANTHROPIC_API_KEY=<key>` to the `.env` file in the project root, then let you know when done. Once confirmed, verify the `.env` file has the key.
 
-## 5. WhatsApp Authentication
+## 6. WhatsApp Authentication
 
-If HAS_AUTH=true from step 1, confirm with user: "WhatsApp credentials already exist. Want to keep them or re-authenticate?" If keeping, skip to step 6.
+If HAS_AUTH=true from step 2, confirm with user: "WhatsApp credentials already exist. Want to keep them or re-authenticate?" If keeping, skip to step 7.
 
 Run the auth script:
 ```bash
@@ -155,25 +183,29 @@ Wait for confirmation that auth succeeded (credentials saved to `store/auth/neon
 - Auth database locked: delete `store/auth/neonize.db` and retry
 - neonize import error: ensure `libmagic` is installed and `pip install -e .` succeeded
 
-## 6. Configure Trigger and Channel Type
+## 7. Channel Type
 
-AskUserQuestion: What trigger word? (default: Andy). In group chats, messages starting with @TriggerWord go to Claude. In the main channel, no prefix needed.
+AskUserQuestion: How do you want to talk to {BotName}?
 
-If the trigger differs from "Andy", update `src/slimclaw/config.py`:
-```python
-ASSISTANT_NAME = "NewName"
-```
+**If bot shares user's personal phone number (same phone):**
+1. Self-chat (chat with yourself) — Recommended. You message yourself and the bot responds.
+2. Solo group (just you) — A group where you're the only member. Good if you want message history separate from self-chat.
 
-AskUserQuestion: Main channel type?
-1. Self-chat (chat with yourself) — recommended if bot shares your phone number
-2. Solo group (just you) — a group where you're the only member
-3. DM with the bot — if bot has its own dedicated phone number
+**If bot has its own dedicated phone number:**
+1. DM with the bot — Recommended. You message the bot's number directly.
+2. Solo group with the bot — A group with just you and the bot.
 
-## 7. Discover and Select Group
+To determine the phone situation, check if ASSISTANT_HAS_OWN_NUMBER is set in `.env`, or ask the user directly.
+
+Do NOT show options that don't apply to the user's setup.
+
+## 8. Discover & Select Group
 
 **For personal/self-chat:** The JID is the user's phone number as `NUMBER@s.whatsapp.net`.
 
-**For group:**
+**For DM with bot's dedicated number:** Ask for the bot's phone number, construct JID as `NUMBER@s.whatsapp.net`.
+
+**For group (solo or with bot):**
 1. Start slimclaw briefly to sync groups:
 ```bash
 timeout 30 slimclaw 2>/dev/null || true
@@ -188,11 +220,11 @@ for jid, name in rows:
     print(f'{jid} | {name}')
 "
 ```
-3. Present group names as AskUserQuestion options (show names only, not JIDs).
+3. Present group names as AskUserQuestion options (show names only, not JIDs). Include an "Other" option if their group isn't listed.
 
-## 8. Register Main Channel
+## 9. Register Main Channel
 
-Register the selected group as the main channel:
+Register the selected group as the main channel, using the bot name from step 1:
 
 ```bash
 python3 -c "
@@ -202,14 +234,14 @@ c = sqlite3.connect('store/messages.db')
 c.execute('''INSERT OR REPLACE INTO registered_groups
     (jid, name, folder, trigger_pattern, container_config, requires_trigger, added_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)''',
-    ('JID', 'main', 'main', '@TRIGGER', json.dumps({}), 0, datetime.now(timezone.utc).isoformat()))
+    ('JID', 'main', 'main', '@BOTNAME', json.dumps({}), 0, datetime.now(timezone.utc).isoformat()))
 c.commit()
 "
 ```
 
-Replace `JID` and `TRIGGER` with the values from steps 6-7.
+Replace `JID` with the value from step 8 and `BOTNAME` with the name from step 1.
 
-## 9. Mount Allowlist
+## 10. Mount Allowlist
 
 AskUserQuestion: Want the agent to access directories outside the SlimClaw project? (Git repos, project folders, documents, etc.)
 
@@ -233,7 +265,7 @@ cat > ~/.config/slimclaw/mount-allowlist.json << 'EOF'
 EOF
 ```
 
-## 10. Start Service
+## 11. Start Service
 
 ### macOS (launchd)
 
@@ -294,7 +326,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now slimclaw
 ```
 
-## 11. Verify
+## 12. Verify
 
 ```bash
 echo "=== SlimClaw Verification ==="
@@ -323,7 +355,10 @@ echo -n "MOUNT_ALLOWLIST: "
 [ -f ~/.config/slimclaw/mount-allowlist.json ] && echo "OK" || echo "MISSING"
 ```
 
-Tell user to test: send a message in their registered chat (with or without trigger depending on channel type).
+Tell the user: "Your bot **{BotName}** is ready! Send a message in your main channel to try it out."
+
+- In the main channel: just type normally, no trigger needed
+- In group chats: start messages with `@{BotName}`
 
 Show the log tail command: `tail -f logs/slimclaw.log`
 

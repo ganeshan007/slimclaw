@@ -42,7 +42,7 @@ class TestStoreMessage:
             content="hello world",
             timestamp="2024-01-01T00:00:01.000Z",
         )
-        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "Andy")
+        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "TARS")
         assert len(messages) == 1
         assert messages[0].id == "msg-1"
         assert messages[0].sender == "123@s.whatsapp.net"
@@ -59,7 +59,7 @@ class TestStoreMessage:
             content="",
             timestamp="2024-01-01T00:00:04.000Z",
         )
-        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "Andy")
+        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "TARS")
         assert len(messages) == 1
         assert messages[0].content == ""
 
@@ -74,7 +74,7 @@ class TestStoreMessage:
             timestamp="2024-01-01T00:00:05.000Z",
             is_from_me=True,
         )
-        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "Andy")
+        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "TARS")
         assert len(messages) == 1
 
     def test_upserts_on_duplicate(self):
@@ -95,7 +95,7 @@ class TestStoreMessage:
             content="updated",
             timestamp="2024-01-01T00:00:01.000Z",
         )
-        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "Andy")
+        messages = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "TARS")
         assert len(messages) == 1
         assert messages[0].content == "updated"
 
@@ -113,22 +113,22 @@ class TestGetMessagesSince:
         _store(id="m4", chat_jid="group@g.us", sender="Carol@s.whatsapp.net", sender_name="Carol", content="third", timestamp="2024-01-01T00:00:04.000Z")
 
     def test_returns_messages_after_timestamp(self):
-        msgs = get_messages_since("group@g.us", "2024-01-01T00:00:02.000Z", "Andy")
+        msgs = get_messages_since("group@g.us", "2024-01-01T00:00:02.000Z", "TARS")
         assert len(msgs) == 1
         assert msgs[0].content == "third"
 
     def test_excludes_bot_messages(self):
-        msgs = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "Andy")
+        msgs = get_messages_since("group@g.us", "2024-01-01T00:00:00.000Z", "TARS")
         bot_msgs = [m for m in msgs if m.content == "bot reply"]
         assert len(bot_msgs) == 0
 
     def test_returns_all_when_empty_timestamp(self):
-        msgs = get_messages_since("group@g.us", "", "Andy")
+        msgs = get_messages_since("group@g.us", "", "TARS")
         assert len(msgs) == 3
 
     def test_filters_pre_migration_bot_messages(self):
-        _store(id="m5", chat_jid="group@g.us", sender="Bot@s.whatsapp.net", sender_name="Bot", content="Andy: old bot reply", timestamp="2024-01-01T00:00:05.000Z")
-        msgs = get_messages_since("group@g.us", "2024-01-01T00:00:04.000Z", "Andy")
+        _store(id="m5", chat_jid="group@g.us", sender="Bot@s.whatsapp.net", sender_name="Bot", content="TARS: old bot reply", timestamp="2024-01-01T00:00:05.000Z")
+        msgs = get_messages_since("group@g.us", "2024-01-01T00:00:04.000Z", "TARS")
         assert len(msgs) == 0
 
 
@@ -146,17 +146,17 @@ class TestGetNewMessages:
         _store(id="a4", chat_jid="group1@g.us", sender="user@s.whatsapp.net", sender_name="User", content="g1 msg2", timestamp="2024-01-01T00:00:04.000Z")
 
     def test_returns_new_messages_across_groups(self):
-        messages, new_ts = get_new_messages(["group1@g.us", "group2@g.us"], "2024-01-01T00:00:00.000Z", "Andy")
+        messages, new_ts = get_new_messages(["group1@g.us", "group2@g.us"], "2024-01-01T00:00:00.000Z", "TARS")
         assert len(messages) == 3
         assert new_ts == "2024-01-01T00:00:04.000Z"
 
     def test_filters_by_timestamp(self):
-        messages, _ = get_new_messages(["group1@g.us", "group2@g.us"], "2024-01-01T00:00:02.000Z", "Andy")
+        messages, _ = get_new_messages(["group1@g.us", "group2@g.us"], "2024-01-01T00:00:02.000Z", "TARS")
         assert len(messages) == 1
         assert messages[0].content == "g1 msg2"
 
     def test_returns_empty_for_no_groups(self):
-        messages, new_ts = get_new_messages([], "", "Andy")
+        messages, new_ts = get_new_messages([], "", "TARS")
         assert len(messages) == 0
         assert new_ts == ""
 

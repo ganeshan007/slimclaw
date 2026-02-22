@@ -178,9 +178,9 @@ for (const count of [1000, 5000, 10000]) {
 console.log('\n[5] Query performance (10000 messages in DB):');
 
 const queries = [
-  ['getMessagesSince (all)', () => db.getMessagesSince('bench@g.us', '', 'Andy')],
-  ['getMessagesSince (last 100)', () => db.getMessagesSince('bench@g.us', '2024-01-01T02:43:19.000Z', 'Andy')],
-  ['getNewMessages (1 group)', () => db.getNewMessages(['bench@g.us'], '', 'Andy')],
+  ['getMessagesSince (all)', () => db.getMessagesSince('bench@g.us', '', 'TARS')],
+  ['getMessagesSince (last 100)', () => db.getMessagesSince('bench@g.us', '2024-01-01T02:43:19.000Z', 'TARS')],
+  ['getNewMessages (1 group)', () => db.getNewMessages(['bench@g.us'], '', 'TARS')],
 ];
 
 for (const [label, fn] of queries) {
