@@ -194,7 +194,11 @@ async def authenticate() -> None:
     except Exception:
         pass
 
-    print("Credentials saved. You can now start SlimClaw.")
+    print("Credentials saved. You can now start SlimClaw.\n")
+
+    # Suppress Go/neonize warnings during shutdown (WebSocket close race)
+    import logging
+    logging.disable(logging.CRITICAL)
 
     # Disconnect and force exit — neonize's Go thread won't stop on its own
     try:
