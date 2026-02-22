@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+dist/
+*.egg-info/
+store/
+data/
+logs/
+container/
+groups/
+benchmarks/results_*.json
+*.db
