@@ -46,6 +46,18 @@ slimclaw-auth
 slimclaw
 ```
 
+## Skills
+
+SlimClaw follows the "Skills over Features" philosophy from NanoClaw. Instead of bloating the codebase, capabilities are added via [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) in `.claude/skills/`.
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| Setup | `/setup` | First-time installation, authentication, service configuration |
+| Customize | `/customize` | Add channels, integrations, change behavior |
+| Debug | `/debug` | Container issues, logs, troubleshooting |
+
+Open Claude Code in the project directory and type the command to invoke a skill.
+
 ## Architecture
 
 ```
