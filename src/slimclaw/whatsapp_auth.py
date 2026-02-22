@@ -109,16 +109,27 @@ async def authenticate() -> None:
     client = NewClient(db_path)
     connected = asyncio.Event()
     browser_opened = False
+    qr_count = 0
 
     @client.event(QREv)
     def on_qr(client_ref, event):
-        nonlocal browser_opened
+        nonlocal browser_opened, qr_count
         codes = list(event.Codes)
         if not codes:
             return
 
+        qr_count += 1
         qr_data = codes[0]
-        logger.debug("QR code received", length=len(qr_data))
+
+        # Debug: show data type and prefix to diagnose invalid QR issues
+        data_type = type(qr_data).__name__
+        preview = str(qr_data)[:50]
+        print(f"  QR code #{qr_count} received ({data_type}, {len(str(qr_data))} chars)")
+        logger.debug("QR code received", count=qr_count, data_type=data_type, preview=preview)
+
+        # Ensure qr_data is a string
+        if isinstance(qr_data, bytes):
+            qr_data = qr_data.decode("utf-8", errors="replace")
 
         # Generate SVG and write HTML
         try:
@@ -129,7 +140,9 @@ async def authenticate() -> None:
             if not browser_opened:
                 browser_opened = True
                 _open_in_browser(qr_html_path)
-                print(f"QR code opened in browser: {qr_html_path}")
+                print(f"  Opened in browser: {qr_html_path}")
+            else:
+                print(f"  Browser page will auto-refresh in a few seconds")
         except Exception as err:
             logger.debug("QR HTML generation failed, terminal-only", error=str(err))
 
@@ -141,13 +154,14 @@ async def authenticate() -> None:
             qr.make(fit=True)
             qr.print_ascii(invert=True)
         except Exception:
-            print(f"QR data: {qr_data}")
+            print(f"  QR data: {qr_data}")
 
     loop = asyncio.get_event_loop()
 
     @client.event(ConnectedEv)
     def on_connected(client_ref, event):
         print("\nAuthenticated successfully!")
+        print("Syncing account data (this may take a moment)...")
         logger.info("WhatsApp authentication successful")
 
         # Write success page
@@ -161,12 +175,18 @@ async def authenticate() -> None:
         loop.call_soon_threadsafe(connected.set)
 
     print("Scan the QR code with WhatsApp to authenticate...")
-    print("(Open WhatsApp > Settings > Linked Devices > Link a Device)\n")
+    print("(Open WhatsApp > Settings > Linked Devices > Link a Device)")
+    print("Waiting for QR code...\n")
 
     # Fire-and-forget: client.connect() is neonize's Go event loop and blocks forever.
     # We just need to wait for the ConnectedEv callback to set the event.
     loop.run_in_executor(None, client.connect)
     await connected.wait()
+
+    # Give neonize a few seconds to finish the initial sync (prekeys, push names)
+    # before killing the Go thread — prevents incomplete state
+    print("Waiting for initial sync to complete...")
+    await asyncio.sleep(5)
 
     # Clean up QR file
     try:
