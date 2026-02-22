@@ -1,11 +1,11 @@
 ---
 name: setup
-description: Run initial SlimClaw setup. Use when user wants to install dependencies, authenticate WhatsApp, register their main channel, or start the background service. Triggers on "setup", "install", "configure slimclaw", or first-time setup requests.
+description: Run initial SlimClaw setup. Use when user wants to install dependencies, authenticate a channel, register their main channel, or start the background service. Triggers on "setup", "install", "configure slimclaw", or first-time setup requests.
 ---
 
 # SlimClaw Setup
 
-Run setup steps automatically. Only pause when user action is required (WhatsApp authentication, configuration choices).
+Run setup steps automatically. Only pause when user action is required (authentication, configuration choices).
 
 **Principle:** When something is broken or missing, fix it. Don't tell the user to go fix it themselves unless it genuinely requires their manual action (e.g. scanning a QR code, pasting a secret token). If a dependency is missing, install it. If a service won't start, diagnose and repair. Ask the user for permission when needed, then do the work.
 
@@ -39,7 +39,49 @@ You are ChosenName, a personal assistant.
 
 If the user picks "TARS" (or accepts the default), no file changes are needed — everything already uses TARS.
 
-## 2. Check Environment
+## 2. Choose How to Connect
+
+AskUserQuestion: How do you want to talk to {BotName}?
+- **WhatsApp** (recommended) — message from your phone, built-in support
+- **Telegram** — Telegram bot integration
+- **Discord** — Discord bot integration
+- **Terminal** — chat directly in your terminal
+
+### If WhatsApp
+
+Continue to step 3. The rest of the setup handles WhatsApp natively.
+
+### If another channel (Telegram, Discord, Terminal, or any other)
+
+Check if a skill exists for that channel:
+
+```bash
+ls .claude/skills/add-{channel}/SKILL.md 2>/dev/null && echo "SKILL_EXISTS" || echo "NOT_FOUND"
+```
+
+Where `{channel}` is the lowercase channel name (e.g. `telegram`, `discord`, `terminal`).
+
+**If skill exists:** Tell the user:
+
+> "Great — we'll set up the base infrastructure first (dependencies, container, Claude auth), then run `/add-{channel}` to configure {Channel}."
+
+Continue with steps 3–6 (environment, dependencies, container, Claude auth). **Skip steps 7–10** (WhatsApp auth and WhatsApp-specific configuration). After step 6, tell the user:
+
+> "Base setup complete! Now run `/add-{channel}` to finish setting up {Channel}."
+
+Then proceed to step 11 (mount allowlist), step 12 (start service), and step 13 (verify).
+
+**If skill doesn't exist:** Tell the user:
+
+> "The {Channel} channel doesn't have a skill yet. SlimClaw uses a Skills over Features approach — anyone can add a channel by creating `.claude/skills/add-{channel}/SKILL.md`.
+>
+> To contribute this skill, see `/customize` for the Channel protocol pattern — a new channel needs a Python class implementing `connect()`, `send_message()`, `is_connected()`, `owns_jid()`, `disconnect()`, and `set_typing()` in `src/slimclaw/channels/{channel}.py`.
+>
+> For now, would you like to set up with WhatsApp instead?"
+
+Re-ask the channel question. If they choose WhatsApp, continue normally. If they insist on the unavailable channel, finish the base setup (steps 3–6) and let them know they can add the channel later with `/customize`.
+
+## 3. Check Environment
 
 Verify prerequisites:
 
@@ -83,7 +125,7 @@ echo -n "PLATFORM: "
 uname -s
 ```
 
-- If HAS_AUTH=true, note that WhatsApp auth exists, offer to skip step 6
+- If HAS_AUTH=true, note that WhatsApp auth exists, offer to skip step 7
 - If HAS_REGISTERED_GROUPS=true, note existing config, offer to skip or reconfigure
 
 **If PYTHON missing or TOO_OLD:**
@@ -98,7 +140,7 @@ Install automatically:
 - macOS: `brew install libmagic`
 - Linux: `sudo apt-get install libmagic1`
 
-## 3. Install Dependencies
+## 4. Install Dependencies
 
 ```bash
 cd PROJECT_ROOT
@@ -115,17 +157,17 @@ Verify the install worked:
 slimclaw --help 2>/dev/null || python3 -m slimclaw --help
 ```
 
-## 4. Container Runtime
+## 5. Container Runtime
 
-### 4a. Install/Start Docker
+### 5a. Install/Start Docker
 
-- DOCKER=running -> continue to 4b
+- DOCKER=running -> continue to 5b
 - DOCKER=installed_not_running -> start Docker: `open -a Docker` (macOS) or `sudo systemctl start docker` (Linux). Wait 15s, re-check with `docker info`.
 - DOCKER=not_found -> **ask the user for confirmation before installing.** Tell them Docker is required for running agents.
   - macOS: `brew install --cask docker`, then `open -a Docker`
   - Linux: `curl -fsSL https://get.docker.com | sh && sudo usermod -aG docker $USER`
 
-### 4b. Build Container Image
+### 5b. Build Container Image
 
 ```bash
 ./container/build.sh
@@ -146,9 +188,9 @@ ln -s ../nanoclaw/container container
 echo '{}' | docker run -i --entrypoint /bin/echo nanoclaw-agent:latest "OK"
 ```
 
-## 5. Claude Authentication
+## 6. Claude Authentication
 
-If HAS_ENV=true from step 2, read `.env` and check if it already has `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`. If so, confirm with user: "You already have Claude credentials configured. Want to keep them or reconfigure?" If keeping, skip to step 6.
+If HAS_ENV=true from step 3, read `.env` and check if it already has `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`. If so, confirm with user: "You already have Claude credentials configured. Want to keep them or reconfigure?" If keeping, skip to step 7.
 
 AskUserQuestion: Claude subscription (Pro/Max) vs Anthropic API key?
 
@@ -162,9 +204,15 @@ Do NOT ask the user to paste the token into the chat. Just tell them what to do,
 
 **API key:** Tell the user to add `ANTHROPIC_API_KEY=<key>` to the `.env` file in the project root, then let you know when done. Once confirmed, verify the `.env` file has the key.
 
-## 6. WhatsApp Authentication
+---
 
-If HAS_AUTH=true from step 2, confirm with user: "WhatsApp credentials already exist. Want to keep them or re-authenticate?" If keeping, skip to step 7.
+**If the user chose a non-WhatsApp channel in step 2** and the skill exists: skip to step 11 (Mount Allowlist) now, and tell the user to run `/add-{channel}` to complete channel setup.
+
+---
+
+## 7. WhatsApp Authentication
+
+If HAS_AUTH=true from step 3, confirm with user: "WhatsApp credentials already exist. Want to keep them or re-authenticate?" If keeping, skip to step 8.
 
 Run the auth script:
 ```bash
@@ -183,9 +231,9 @@ Wait for confirmation that auth succeeded (credentials saved to `store/auth/neon
 - Auth database locked: delete `store/auth/neonize.db` and retry
 - neonize import error: ensure `libmagic` is installed and `pip install -e .` succeeded
 
-## 7. Channel Type
+## 8. WhatsApp Channel Type
 
-AskUserQuestion: How do you want to talk to {BotName}?
+AskUserQuestion: How do you want to talk to {BotName} on WhatsApp?
 
 **If bot shares user's personal phone number (same phone):**
 1. Self-chat (chat with yourself) — Recommended. You message yourself and the bot responds.
@@ -199,7 +247,7 @@ To determine the phone situation, check if ASSISTANT_HAS_OWN_NUMBER is set in `.
 
 Do NOT show options that don't apply to the user's setup.
 
-## 8. Discover & Select Group
+## 9. Discover & Select Group
 
 **For personal/self-chat:** The JID is the user's phone number as `NUMBER@s.whatsapp.net`.
 
@@ -222,7 +270,7 @@ for jid, name in rows:
 ```
 3. Present group names as AskUserQuestion options (show names only, not JIDs). Include an "Other" option if their group isn't listed.
 
-## 9. Register Main Channel
+## 10. Register Main Channel
 
 Register the selected group as the main channel, using the bot name from step 1:
 
@@ -239,9 +287,9 @@ c.commit()
 "
 ```
 
-Replace `JID` with the value from step 8 and `BOTNAME` with the name from step 1.
+Replace `JID` with the value from step 9 and `BOTNAME` with the name from step 1.
 
-## 10. Mount Allowlist
+## 11. Mount Allowlist
 
 AskUserQuestion: Want the agent to access directories outside the SlimClaw project? (Git repos, project folders, documents, etc.)
 
@@ -265,7 +313,7 @@ cat > ~/.config/slimclaw/mount-allowlist.json << 'EOF'
 EOF
 ```
 
-## 11. Start Service
+## 12. Start Service
 
 ### macOS (launchd)
 
@@ -326,7 +374,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now slimclaw
 ```
 
-## 12. Verify
+## 13. Verify
 
 ```bash
 echo "=== SlimClaw Verification ==="
@@ -338,7 +386,7 @@ echo -n "CREDENTIALS: "
 (grep -q "CLAUDE_CODE_OAUTH_TOKEN=sk-" .env 2>/dev/null || grep -q "ANTHROPIC_API_KEY=sk-" .env 2>/dev/null) && echo "OK" || echo "MISSING"
 
 echo -n "WHATSAPP_AUTH: "
-[ -f store/auth/neonize.db ] && echo "OK" || echo "MISSING"
+[ -f store/auth/neonize.db ] && echo "OK" || echo "N/A"
 
 echo -n "REGISTERED_GROUPS: "
 python3 -c "
