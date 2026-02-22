@@ -11,6 +11,8 @@ Run setup steps automatically. Only pause when user action is required (authenti
 
 **UX Note:** Use `AskUserQuestion` for all user-facing questions.
 
+**Alternative:** Users without Claude Code can run `slimclaw-setup` for a standalone CLI wizard that covers the same steps.
+
 ## 1. Welcome & Name Your Bot
 
 Start with personalization — this is the user's assistant, let them own it.

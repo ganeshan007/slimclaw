@@ -23,6 +23,7 @@ dev = [
 [project.scripts]
 slimclaw = "slimclaw.main:run"
 slimclaw-auth = "slimclaw.whatsapp_auth:run"
+slimclaw-setup = "slimclaw.setup_cli:run"
 
 [build-system]
 requires = ["setuptools>=68.0"]

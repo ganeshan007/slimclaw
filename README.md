@@ -32,17 +32,25 @@ pip install -e ".[dev]"
 
 ### Setup
 
+Interactive wizard (no Claude Code needed):
+
 ```bash
-# 1. Create .env with your API key
+slimclaw-setup
+```
+
+Or with Claude Code for AI-guided setup:
+
+```bash
+claude
+# then type /setup
+```
+
+Or manually:
+
+```bash
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
-
-# 2. Build the container image (shared with NanoClaw)
 ./container/build.sh
-
-# 3. Authenticate WhatsApp
 slimclaw-auth
-
-# 4. Run
 slimclaw
 ```
 
