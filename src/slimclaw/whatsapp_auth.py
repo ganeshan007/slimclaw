@@ -143,6 +143,8 @@ async def authenticate() -> None:
         except Exception:
             print(f"QR data: {qr_data}")
 
+    loop = asyncio.get_event_loop()
+
     @client.event(ConnectedEv)
     def on_connected(client_ref, event):
         print("\nAuthenticated successfully!")
@@ -154,12 +156,13 @@ async def authenticate() -> None:
         except Exception:
             pass
 
-        connected.set()
+        # Callback runs in Go thread — must use call_soon_threadsafe
+        # to wake up the asyncio event loop
+        loop.call_soon_threadsafe(connected.set)
 
     print("Scan the QR code with WhatsApp to authenticate...")
     print("(Open WhatsApp > Settings > Linked Devices > Link a Device)\n")
 
-    loop = asyncio.get_event_loop()
     # Fire-and-forget: client.connect() is neonize's Go event loop and blocks forever.
     # We just need to wait for the ConnectedEv callback to set the event.
     loop.run_in_executor(None, client.connect)
