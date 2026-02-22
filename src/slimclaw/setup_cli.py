@@ -239,22 +239,13 @@ def step_4_install_deps() -> None:
     except FileNotFoundError:
         pass
 
-    print(f"  {DIM}Running pip install -e .[dev]...{RESET}")
+    print(f"  Running pip install -e .[dev]...\n")
     try:
-        proc = subprocess.Popen(
-            ["pip", "install", "-e", ".[dev]"],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1,
-        )
-        for line in proc.stdout:
-            line = line.rstrip()
-            if line:
-                print(f"  {DIM}  {line}{RESET}")
-        proc.wait()
-        if proc.returncode != 0:
-            raise subprocess.CalledProcessError(proc.returncode, "pip install")
+        _run("pip install -e '.[dev]'", timeout=300)
+        print()
         _ok("Dependencies installed")
     except subprocess.CalledProcessError:
+        print()
         _fail("pip install failed")
         print(f"  {DIM}Try: pip install -e . (without dev extras){RESET}")
         sys.exit(1)
@@ -308,22 +299,13 @@ def step_5_container(status: dict[str, str]) -> None:
             _fail("container/build.sh not found and NanoClaw not nearby")
             sys.exit(1)
 
-    print(f"  {DIM}Building container image (this takes a few minutes)...{RESET}")
+    print(f"  Building container image (this takes a few minutes)...\n")
     try:
-        proc = subprocess.Popen(
-            ["./container/build.sh"],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1,
-        )
-        for line in proc.stdout:
-            line = line.rstrip()
-            if line:
-                print(f"  {DIM}  {line}{RESET}")
-        proc.wait()
-        if proc.returncode != 0:
-            raise subprocess.CalledProcessError(proc.returncode, "./container/build.sh")
+        _run("./container/build.sh", timeout=600)
+        print()
         _ok("Container image built")
     except subprocess.CalledProcessError:
+        print()
         _fail("Container build failed — check output above")
         sys.exit(1)
 
