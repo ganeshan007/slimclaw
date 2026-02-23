@@ -48,6 +48,14 @@ class SchedulerDependencies(Protocol):
     async def send_message(self, jid: str, text: str) -> None: ...
 
 
+async def _run_task_tracked(task: ScheduledTask, deps: SchedulerDependencies) -> None:
+    """Wrapper that clears the inflight set after task execution."""
+    try:
+        await _run_task(task, deps)
+    finally:
+        _inflight_tasks.discard(task.id)
+
+
 async def _run_task(task: ScheduledTask, deps: SchedulerDependencies) -> None:
     start_time = time.monotonic()
     group_dir = GROUPS_DIR / task.group_folder
@@ -201,6 +209,7 @@ def _make_on_output(
 
 
 _scheduler_running = False
+_inflight_tasks: set[str] = set()  # task IDs currently being executed
 
 
 async def start_scheduler_loop(deps: SchedulerDependencies) -> None:
@@ -214,18 +223,21 @@ async def start_scheduler_loop(deps: SchedulerDependencies) -> None:
     while True:
         try:
             due_tasks = get_due_tasks()
-            if due_tasks:
-                logger.info("Found due tasks", count=len(due_tasks))
+            # Filter out tasks already in-flight (prevents re-enqueue on next poll)
+            new_due = [t for t in due_tasks if t.id not in _inflight_tasks]
+            if new_due:
+                logger.info("Found due tasks", count=len(new_due))
 
-            for task in due_tasks:
+            for task in new_due:
                 current = get_task_by_id(task.id)
                 if not current or current.status != "active":
                     continue
 
+                _inflight_tasks.add(current.id)
                 deps.queue.enqueue_task(
                     current.chat_jid,
                     current.id,
-                    lambda t=current: _run_task(t, deps),
+                    lambda t=current: _run_task_tracked(t, deps),
                 )
         except Exception as err:
             logger.error("Error in scheduler loop", error=str(err))
