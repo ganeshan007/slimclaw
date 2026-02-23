@@ -19,14 +19,13 @@ Inspired by [NanoClaw](https://github.com/qwibitai/nanoclaw) and [nanobot](https
 
 ### Benchmarks
 
-| Metric | SlimClaw (Python) | NanoClaw (Node.js) |
-|---|---|---|
-| Idle RSS | **30.5 MB** | 100.3 MB |
-| Final RSS (after workload) | **53.5 MB** | 138.9 MB |
-| Dependencies | 6 | 9 |
-| Source lines | 3,651 | 3,700 |
-
-Python uses **2x less memory**. Both run the same Docker containers.
+| Metric | SlimClaw (Python) |
+|---|---|
+| Idle RSS (all modules loaded) | **30.2 MB** |
+| Final RSS (after workload) | **54.1 MB** |
+| SQLite insert (10K msgs) | 482 ms (20.7K msg/s) |
+| SQLite query (10K rows) | 35 ms |
+| Dependencies | 6 |
 
 ## Quick Start
 
