@@ -94,7 +94,9 @@ class GroupQueue:
 
         if state.active:
             state.pending_tasks.append(QueuedTask(id=task_id, group_jid=group_jid, fn=fn))
-            logger.debug("Container active, task queued", group_jid=group_jid, task_id=task_id)
+            # Close the idle container's stdin so it finishes and the task can run
+            self.close_stdin(group_jid)
+            logger.debug("Container active, task queued + stdin closed to drain", group_jid=group_jid, task_id=task_id)
             return
 
         if self._active_count >= MAX_CONCURRENT_CONTAINERS:
