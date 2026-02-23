@@ -26,6 +26,7 @@ Inspired by [NanoClaw](https://github.com/qwibitai/nanoclaw) and [nanobot](https
 | SQLite insert (10K msgs) | 482 ms | **52 ms** |
 | SQLite query (10K rows) | 35 ms | **7.6 ms** |
 | Dependencies | 6 | 9 |
+| Source lines | 4,670 | 6,650 |
 
 Python uses **2x less memory**. Node.js is faster at SQLite (native C++ addon).
 
