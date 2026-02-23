@@ -198,12 +198,13 @@ def store_chat_metadata(
 
 def update_chat_name(chat_jid: str, name: str) -> None:
     db = _get_db()
+    is_group = 1 if chat_jid.endswith("@g.us") else 0
     db.execute(
         """
-        INSERT INTO chats (jid, name, last_message_time) VALUES (?, ?, ?)
-        ON CONFLICT(jid) DO UPDATE SET name = excluded.name
+        INSERT INTO chats (jid, name, last_message_time, is_group) VALUES (?, ?, ?, ?)
+        ON CONFLICT(jid) DO UPDATE SET name = excluded.name, is_group = excluded.is_group
         """,
-        (chat_jid, name, datetime.now(timezone.utc).isoformat()),
+        (chat_jid, name, datetime.now(timezone.utc).isoformat(), is_group),
     )
 
 
