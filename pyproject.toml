@@ -1,8 +1,22 @@
 [project]
 name = "slimclaw"
-version = "1.0.0"
-description = "Personal Claude assistant - Python port"
+version = "0.0.1"
+description = "Personal Claude assistant accessible via WhatsApp"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+authors = [
+    { name = "Ganeshan Malhotra", email = "ganeshan007@gmail.com" },
+]
+keywords = ["claude", "whatsapp", "assistant", "ai", "chatbot"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+]
 dependencies = [
     "neonize>=0.3.14",
     "croniter>=2.0",
@@ -20,6 +34,11 @@ dev = [
     "mypy>=1.10",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ganeshan007/slimclaw"
+Repository = "https://github.com/ganeshan007/slimclaw"
+Issues = "https://github.com/ganeshan007/slimclaw/issues"
+
 [project.scripts]
 slimclaw = "slimclaw.main:run"
 slimclaw-auth = "slimclaw.whatsapp_auth:run"
@@ -31,6 +50,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+slimclaw = ["py.typed"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
