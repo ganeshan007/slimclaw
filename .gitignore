@@ -6,7 +6,7 @@ dist/
 store/
 data/
 logs/
-container/
+container/agent-runner/node_modules/
 groups/
 benchmarks/results_*.json
 *.db

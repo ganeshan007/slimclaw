@@ -101,7 +101,7 @@ src/slimclaw/
 - **`__slots__` dataclasses** — 19% less per-object memory than regular dataclasses
 - **Lazy structlog import** — deferred until first log call, saves 20 MB startup RSS
 - **SQLite WAL mode + autocommit** — no per-statement `commit()` overhead
-- **Shared container image** — uses the same `slimclaw-agent:latest` Docker image
+- **Container image** — uses the `slimclaw-agent:latest` Docker image
 
 ## What It Does
 
@@ -133,7 +133,7 @@ pause the Monday briefing task
 
 ## Container
 
-SlimClaw shares the container image with NanoClaw. The container runs:
+The container runs:
 
 - Node.js 22 + Claude Agent SDK
 - Chromium (for browser automation)
@@ -144,12 +144,6 @@ Build it once:
 
 ```bash
 ./container/build.sh
-```
-
-Symlink it if you already have NanoClaw:
-
-```bash
-ln -s ../nanoclaw/container container  # shared build infrastructure
 ```
 
 ## Development

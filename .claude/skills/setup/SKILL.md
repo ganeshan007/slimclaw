@@ -175,12 +175,6 @@ slimclaw --help 2>/dev/null || python3 -m slimclaw --help
 ./container/build.sh
 ```
 
-If `container/` doesn't exist and NanoClaw is installed nearby:
-```bash
-ln -s ../nanoclaw/container container  # shared build infrastructure
-./container/build.sh
-```
-
 **If BUILD failed:** Read the error output.
 - Cache issue: `docker builder prune -f`, then retry
 - Missing Dockerfile: check the container symlink points to the right location

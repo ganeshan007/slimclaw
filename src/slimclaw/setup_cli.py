@@ -316,19 +316,12 @@ def step_5_container(status: dict[str, str]) -> None:
 
     build_script = Path("container/build.sh")
     if not build_script.exists():
-        shared_container = Path("../nanoclaw/container")
-        if shared_container.exists():
-            _warn("container/ not found — symlinking from NanoClaw")
-            os.symlink(str(shared_container.resolve()), "container")
-        else:
-            _fail("container/build.sh not found and NanoClaw not nearby")
-            sys.exit(1)
+        _fail("container/build.sh not found")
+        sys.exit(1)
 
     print(f"  Building container image (this takes a few minutes)...\n")
     try:
         _run("./container/build.sh", timeout=600)
-        # The shared build script tags as nanoclaw-agent — re-tag for slimclaw
-        _run("docker tag nanoclaw-agent:latest slimclaw-agent:latest", capture=True, check=False)
         print()
         _ok("Container image built (slimclaw-agent:latest)")
     except subprocess.CalledProcessError:

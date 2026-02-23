@@ -28,8 +28,8 @@ from slimclaw.logger import logger
 from slimclaw.mount_security import validate_additional_mounts
 from slimclaw.types import RegisteredGroup
 
-OUTPUT_START_MARKER = "---NANOCLAW_OUTPUT_START---"
-OUTPUT_END_MARKER = "---NANOCLAW_OUTPUT_END---"
+OUTPUT_START_MARKER = "---SLIMCLAW_OUTPUT_START---"
+OUTPUT_END_MARKER = "---SLIMCLAW_OUTPUT_END---"
 
 
 def _get_home_dir() -> str:
