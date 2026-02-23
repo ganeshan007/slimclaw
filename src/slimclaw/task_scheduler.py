@@ -49,7 +49,8 @@ class SchedulerDependencies(Protocol):
 
 
 async def _run_task_tracked(task: ScheduledTask, deps: SchedulerDependencies) -> None:
-    """Wrapper that clears the inflight set after task execution."""
+    """Wrapper that tracks inflight state during actual execution."""
+    _inflight_tasks.add(task.id)
     try:
         await _run_task(task, deps)
     finally:
@@ -233,7 +234,8 @@ async def start_scheduler_loop(deps: SchedulerDependencies) -> None:
                 if not current or current.status != "active":
                     continue
 
-                _inflight_tasks.add(current.id)
+                # Track inflight inside the lambda — if the queue defers
+                # execution (group active), we don't want to block future polls
                 deps.queue.enqueue_task(
                     current.chat_jid,
                     current.id,
