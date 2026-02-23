@@ -206,6 +206,18 @@ Do NOT ask the user to paste the token into the chat. Just tell them what to do,
 
 **API key:** Tell the user to add `ANTHROPIC_API_KEY=<key>` to the `.env` file in the project root, then let you know when done. Once confirmed, verify the `.env` file has the key.
 
+### Model Selection
+
+AskUserQuestion: Which Claude model should {BotName} use?
+- **Haiku 4.5** (`claude-haiku-4-5-20251001`) — fastest, cheapest ($1/$5 per MTok)
+- **Sonnet 4.6** (`claude-sonnet-4-6`) — balanced speed and intelligence ($3/$15 per MTok) (recommended)
+- **Opus 4.6** (`claude-opus-4-6`) — most capable, best for complex tasks ($5/$25 per MTok)
+
+Add the chosen model to `.env`:
+```
+CLAUDE_MODEL=claude-sonnet-4-6
+```
+
 ---
 
 **If the user chose a non-WhatsApp app in step 2** and the skill exists: skip to step 11 (Mount Allowlist) now, and tell the user to run `/add-{app}` to complete app setup.

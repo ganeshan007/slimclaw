@@ -193,7 +193,7 @@ def _build_volume_mounts(group: RegisteredGroup, is_main: bool) -> list[VolumeMo
 
 
 def _read_secrets() -> dict[str, str]:
-    return read_env_file(["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"])
+    return read_env_file(["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "CLAUDE_MODEL"])
 
 
 def _build_container_args(mounts: list[VolumeMount], container_name: str) -> list[str]:

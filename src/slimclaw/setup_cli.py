@@ -378,6 +378,22 @@ def step_6_claude_auth(status: dict[str, str]) -> None:
         env_path.write_text("\n".join(lines) + "\n")
         _ok("OAuth token saved to .env")
 
+    # Model selection
+    print()
+    MODELS = [
+        ("claude-haiku-4-5-20251001", "Haiku 4.5 — fastest, cheapest ($1/$5 per MTok)"),
+        ("claude-sonnet-4-6", "Sonnet 4.6 — balanced speed and intelligence ($3/$15 per MTok) (recommended)"),
+        ("claude-opus-4-6", "Opus 4.6 — most capable, best for complex tasks ($5/$25 per MTok)"),
+    ]
+    model_choice = _choose("Which Claude model should your bot use?", [m[1] for m in MODELS])
+    model_id = MODELS[model_choice][0]
+
+    existing = env_path.read_text() if env_path.exists() else ""
+    lines = [l for l in existing.splitlines() if not l.startswith("CLAUDE_MODEL=")]
+    lines.append(f"CLAUDE_MODEL={model_id}")
+    env_path.write_text("\n".join(lines) + "\n")
+    _ok(f"Model set to {model_id}")
+
 
 def step_7_whatsapp_auth(status: dict[str, str]) -> None:
     _header(7, "WhatsApp Authentication")
