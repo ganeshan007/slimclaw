@@ -73,6 +73,11 @@ class GroupQueue:
             )
             return
 
+        # Mark active BEFORE scheduling the task to prevent duplicate spawns.
+        # Without this, a second caller can see active=False before the first
+        # task has a chance to run (asyncio.create_task is not immediate).
+        state.active = True
+        self._active_count += 1
         asyncio.create_task(self._run_for_group(group_jid, "messages"))
 
     def enqueue_task(
@@ -104,6 +109,9 @@ class GroupQueue:
             )
             return
 
+        # Mark active BEFORE scheduling to prevent duplicate spawns
+        state.active = True
+        self._active_count += 1
         asyncio.create_task(self._run_task(group_jid, QueuedTask(id=task_id, group_jid=group_jid, fn=fn)))
 
     def register_process(
@@ -150,9 +158,8 @@ class GroupQueue:
 
     async def _run_for_group(self, group_jid: str, reason: str) -> None:
         state = self._get_group(group_jid)
-        state.active = True
+        # state.active and _active_count already set by enqueue_message_check
         state.pending_messages = False
-        self._active_count += 1
 
         logger.debug(
             "Starting container for group",
@@ -181,8 +188,7 @@ class GroupQueue:
 
     async def _run_task(self, group_jid: str, task: QueuedTask) -> None:
         state = self._get_group(group_jid)
-        state.active = True
-        self._active_count += 1
+        # state.active and _active_count already set by enqueue_task
 
         logger.debug(
             "Running queued task",
