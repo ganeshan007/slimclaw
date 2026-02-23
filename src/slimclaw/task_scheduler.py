@@ -221,6 +221,10 @@ async def start_scheduler_loop(deps: SchedulerDependencies) -> None:
     _scheduler_running = True
     logger.info("Scheduler loop started")
 
+    # Wait for WhatsApp to fully initialize before running tasks —
+    # the WebSocket needs time to sync group members after connecting
+    await asyncio.sleep(15)
+
     while True:
         try:
             due_tasks = get_due_tasks()
