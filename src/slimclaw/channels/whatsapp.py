@@ -22,6 +22,7 @@ try:
         DisconnectedEv,
         MessageEv,
         PairStatusEv,
+        QREv,
     )
     from neonize.proto.Neonize_pb2 import Message as NeonizeMessage
     from neonize.utils.enum import ReceiptType
@@ -111,6 +112,19 @@ class WhatsAppChannel:
         def on_disconnected(client_ref, event):
             self._connected = False
             logger.info("Disconnected from WhatsApp")
+
+        # Suppress neonize's default QR terminal output during normal operation.
+        # neonize has TWO QR paths: client.qr() (segno terminal print) and
+        # @client.event(QREv) (Python event). Override both.
+        @client.qr
+        def on_qr_raw(client_ref, data_qr):
+            logger.warning(
+                "WhatsApp requesting QR authentication — run slimclaw-auth to re-authenticate"
+            )
+
+        @client.event(QREv)
+        def on_qr_event(client_ref, event):
+            pass  # Handled by on_qr_raw above
 
         @client.event(MessageEv)
         def on_message(client_ref, event):
