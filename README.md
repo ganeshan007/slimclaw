@@ -19,13 +19,15 @@ Inspired by [NanoClaw](https://github.com/qwibitai/nanoclaw) and [nanobot](https
 
 ### Benchmarks
 
-| Metric | SlimClaw (Python) |
-|---|---|
-| Idle RSS (all modules loaded) | **30.2 MB** |
-| Final RSS (after workload) | **54.1 MB** |
-| SQLite insert (10K msgs) | 482 ms (20.7K msg/s) |
-| SQLite query (10K rows) | 35 ms |
-| Dependencies | 6 |
+| Metric | SlimClaw (Python) | NanoClaw (Node.js) |
+|---|---|---|
+| Idle RSS (all modules loaded) | **30.2 MB** | 100.3 MB |
+| Final RSS (after workload) | **54.1 MB** | 138.9 MB |
+| SQLite insert (10K msgs) | 482 ms | **52 ms** |
+| SQLite query (10K rows) | 35 ms | **7.6 ms** |
+| Dependencies | 6 | 9 |
+
+Python uses **2x less memory**. Node.js is faster at SQLite (native C++ addon).
 
 ## Quick Start
 
