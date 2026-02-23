@@ -1,6 +1,6 @@
 # SlimClaw
 
-Python rewrite of NanoClaw. Same functionality, half the memory. See [README.md](README.md) for benchmarks and setup.
+Personal Claude assistant via WhatsApp. Inspired by NanoClaw and nanobot. See [README.md](README.md) for setup.
 
 ## Quick Context
 

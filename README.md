@@ -1,52 +1,63 @@
 # SlimClaw
 
-Python rewrite of [NanoClaw](https://github.com/qwibitai/nanoclaw). Same functionality, half the memory.
-
 Personal Claude assistant accessible via WhatsApp. Messages route to Claude Agent SDK running in Docker containers. Each group gets isolated filesystem and memory.
 
-## Why
+Inspired by [NanoClaw](https://github.com/qwibitai/nanoclaw) and [nanobot](https://github.com/HKUDS/nanobot), built from scratch in Python with a focus on low memory overhead, easy onboarding, and extensibility through skills.
 
-NanoClaw is Node.js. SlimClaw is the same thing in Python — leaner runtime, fewer dependencies, and optimized for low memory overhead. Built to profile, compare, and run where Python is preferred.
+## Features
 
-### Benchmarks (vs NanoClaw Node.js)
+- **WhatsApp I/O** — message Claude from your phone
+- **Standalone CLI setup** — `slimclaw-setup` walks you through everything, no AI IDE needed
+- **Model selection** — choose Haiku 4.5 (fast), Sonnet 4.6 (balanced), or Opus 4.6 (most capable)
+- **Isolated groups** — each group has its own memory, filesystem, and container
+- **Main channel** — private admin chat, no trigger needed. Say "join Family Chat" to add groups
+- **Auto-detection** — when someone mentions @YourBot in an unregistered group, you get notified
+- **Scheduled tasks** — cron, interval, or one-shot jobs
+- **Web access** — search and browse from inside containers
+- **Agent Swarms** — teams of agents collaborating on tasks
+- **Skills over Features** — add capabilities via Claude Code skills, not code bloat
+
+### Benchmarks
 
 | Metric | SlimClaw (Python) | NanoClaw (Node.js) |
 |---|---|---|
-| Idle RSS (all modules loaded) | **30.5 MB** | 100.3 MB |
+| Idle RSS | **30.5 MB** | 100.3 MB |
 | Final RSS (after workload) | **53.5 MB** | 138.9 MB |
-| SQLite insert (10K msgs) | 475 ms | **52 ms** |
-| SQLite query (10K rows) | 37 ms | **7.6 ms** |
 | Dependencies | 6 | 9 |
 | Source lines | 3,651 | 3,700 |
-| Tests | 81 | 81 |
 
-Python uses **2x less memory**. Node.js is faster at SQLite (native C++ addon). Both run the same Docker containers.
+Python uses **2x less memory**. Both run the same Docker containers.
 
 ## Quick Start
+
+```bash
+pip install slimclaw
+slimclaw-setup
+```
+
+Or from source:
 
 ```bash
 git clone https://github.com/ganeshan007/slimclaw.git
 cd slimclaw
 pip install -e ".[dev]"
+slimclaw-setup
 ```
 
-### Setup
+### Setup Options
 
-Interactive wizard (no Claude Code needed):
-
+**Interactive wizard** (no Claude Code needed):
 ```bash
 slimclaw-setup
 ```
 
-Or with Claude Code for AI-guided setup:
-
+**AI-guided setup** (with Claude Code):
 ```bash
 claude
 # then type /setup
 ```
 
-Or manually:
-
+**Manual:**
 ```bash
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
 ./container/build.sh
@@ -56,12 +67,12 @@ slimclaw
 
 ## Skills
 
-SlimClaw follows the "Skills over Features" philosophy from NanoClaw. Instead of bloating the codebase, capabilities are added via [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) in `.claude/skills/`.
+Capabilities are added via [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) in `.claude/skills/` instead of bloating the codebase.
 
 | Skill | Command | Purpose |
 |-------|---------|---------|
 | Setup | `/setup` | First-time installation, authentication, service configuration |
-| Customize | `/customize` | Add channels, integrations, change behavior |
+| Customize | `/customize` | Add apps, integrations, change behavior |
 | Debug | `/debug` | Container issues, logs, troubleshooting |
 
 Open Claude Code in the project directory and type the command to invoke a skill.
@@ -83,6 +94,7 @@ Single Python process. `asyncio` event loop with three concurrent tasks:
 ```
 src/slimclaw/
   main.py              # Orchestrator: startup, message loop, agent invocation
+  setup_cli.py         # Interactive setup wizard (no Claude Code needed)
   channels/whatsapp.py # WhatsApp via neonize (Go-based, wraps whatsmeow)
   db.py                # SQLite: messages, groups, sessions, tasks, state
   container_runner.py  # Docker subprocess, output marker parsing, mount building
@@ -101,17 +113,6 @@ src/slimclaw/
 - **`__slots__` dataclasses** — 19% less per-object memory than regular dataclasses
 - **Lazy structlog import** — deferred until first log call, saves 20 MB startup RSS
 - **SQLite WAL mode + autocommit** — no per-statement `commit()` overhead
-- **Container image** — uses the `slimclaw-agent:latest` Docker image
-
-## What It Does
-
-- **WhatsApp I/O** — message Claude from your phone
-- **Isolated groups** — each group has its own `CLAUDE.md`, filesystem, container
-- **Main channel** — private admin control, no trigger needed
-- **Scheduled tasks** — cron, interval, or one-shot jobs
-- **Web access** — search and fetch from inside containers
-- **Agent Swarms** — teams of agents collaborating on tasks
-- **IPC authorization** — main group can do anything; other groups are sandboxed
 
 ## Usage
 
