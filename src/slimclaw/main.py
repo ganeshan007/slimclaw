@@ -107,6 +107,43 @@ def _get_available_groups() -> list[AvailableGroup]:
     ]
 
 
+def _on_unregistered_trigger(chat_jid: str, sender_name: str, content: str) -> None:
+    """Called when someone uses the trigger word in an unregistered group."""
+    # Look up group name from chats table
+    chats = get_all_chats()
+    group_name = chat_jid
+    for c in chats:
+        if c.jid == chat_jid:
+            group_name = c.name or chat_jid
+            break
+
+    logger.info("Trigger in unregistered group", chat_jid=chat_jid, group=group_name, sender=sender_name)
+
+    # Find the main channel JID to send notification
+    main_jid = None
+    for jid, group in _registered_groups.items():
+        if group.folder == MAIN_GROUP_FOLDER:
+            main_jid = jid
+            break
+
+    if main_jid and _channels:
+        channel = find_channel(_channels, main_jid)
+        if channel:
+            msg = (
+                f"{ASSISTANT_NAME}: {sender_name} mentioned @{ASSISTANT_NAME} in "
+                f"*{group_name}* (not registered).\n\n"
+                f"To add this group, say: *join {group_name}*"
+            )
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                loop.call_soon_threadsafe(
+                    lambda: asyncio.ensure_future(channel.send_message(main_jid, msg))
+                )
+            except Exception as err:
+                logger.error("Failed to notify main channel", error=str(err))
+
+
 async def _process_group_messages(chat_jid: str) -> bool:
     """Process all pending messages for a group.
     Called by the GroupQueue when it's this group's turn.
@@ -390,6 +427,7 @@ async def main() -> None:
             chat_jid, ts, name, channel, is_group
         ),
         registered_groups=lambda: _registered_groups,
+        on_unregistered_trigger=_on_unregistered_trigger,
     )
 
     # Create and connect channels

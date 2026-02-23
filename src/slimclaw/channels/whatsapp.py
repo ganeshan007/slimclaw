@@ -8,10 +8,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from slimclaw.config import ASSISTANT_HAS_OWN_NUMBER, ASSISTANT_NAME, STORE_DIR
+from slimclaw.config import ASSISTANT_HAS_OWN_NUMBER, ASSISTANT_NAME, STORE_DIR, TRIGGER_PATTERN
 from slimclaw.db import get_last_group_sync, set_last_group_sync, update_chat_name
 from slimclaw.logger import logger
-from slimclaw.types import NewMessage, OnChatMetadata, OnInboundMessage, RegisteredGroup
+from slimclaw.types import NewMessage, OnChatMetadata, OnInboundMessage, OnUnregisteredTrigger, RegisteredGroup
 
 GROUP_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000  # 24 hours
 
@@ -37,10 +37,12 @@ class WhatsAppChannelOpts:
         on_message: OnInboundMessage,
         on_chat_metadata: OnChatMetadata,
         registered_groups: callable,
+        on_unregistered_trigger: OnUnregisteredTrigger | None = None,
     ):
         self.on_message = on_message
         self.on_chat_metadata = on_chat_metadata
         self.registered_groups = registered_groups
+        self.on_unregistered_trigger = on_unregistered_trigger
 
 
 class WhatsAppChannel:
@@ -165,12 +167,7 @@ class WhatsAppChannel:
         is_group = chat_jid.endswith("@g.us")
         self.opts.on_chat_metadata(chat_jid, timestamp, None, "whatsapp", is_group)
 
-        groups = self.opts.registered_groups()
-        if chat_jid not in groups:
-            logger.debug("Ignoring message from unregistered chat", chat_jid=chat_jid, registered=list(groups.keys()))
-            return
-
-        # Extract text content
+        # Extract text content early — needed for both registered and unregistered handling
         content = ""
         if msg.conversation:
             content = msg.conversation
@@ -180,6 +177,25 @@ class WhatsAppChannel:
             content = msg.imageMessage.caption
         elif msg.videoMessage and msg.videoMessage.caption:
             content = msg.videoMessage.caption
+
+        groups = self.opts.registered_groups()
+        if chat_jid not in groups:
+            # Check if someone is trying to invoke the bot in an unregistered group
+            if (
+                content
+                and is_group
+                and self.opts.on_unregistered_trigger
+                and TRIGGER_PATTERN.search(content.strip())
+            ):
+                sender_obj = info.MessageSource.Sender
+                sender = self._jid_to_string(sender_obj) if sender_obj else chat_jid
+                try:
+                    push_name = getattr(info, "PushName", None) or getattr(info, "Pushname", None)
+                    sender_name = str(push_name) if push_name else sender.split("@")[0]
+                except Exception:
+                    sender_name = sender.split("@")[0]
+                self.opts.on_unregistered_trigger(chat_jid, sender_name, content)
+            return
 
         if not content:
             return

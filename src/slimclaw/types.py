@@ -93,3 +93,4 @@ class Channel(Protocol):
 # Callback types
 OnInboundMessage = Callable[[str, NewMessage], None]
 OnChatMetadata = Callable[[str, str, Optional[str], Optional[str], Optional[bool]], None]
+OnUnregisteredTrigger = Callable[[str, str, str], None]  # (chat_jid, sender_name, content)
