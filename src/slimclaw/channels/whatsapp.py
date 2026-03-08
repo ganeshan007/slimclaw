@@ -183,6 +183,13 @@ class WhatsAppChannel:
             content = msg.videoMessage.caption
 
         groups = self.opts.registered_groups()
+
+        # WhatsApp migrated DMs to LID JIDs — resolve to phone JID if needed
+        if chat_jid not in groups and chat_jid.endswith("@lid"):
+            resolved = self._resolve_lid_jid(chat_jid)
+            if resolved and resolved in groups:
+                chat_jid = resolved
+
         if chat_jid not in groups:
             # Check if someone is trying to invoke the bot in an unregistered group
             if (
@@ -232,6 +239,23 @@ class WhatsAppChannel:
                 is_bot_message=is_bot_message,
             ),
         )
+
+    def _resolve_lid_jid(self, lid_jid: str) -> str | None:
+        """Resolve a @lid JID to a @s.whatsapp.net JID, with caching."""
+        if lid_jid in self._lid_to_phone_map:
+            return self._lid_to_phone_map[lid_jid]
+        if not self._client:
+            return None
+        try:
+            pn_jid = self._client.get_pn_from_lid(self._parse_jid(lid_jid))
+            phone_jid = self._jid_to_string(pn_jid)
+            if phone_jid and phone_jid != lid_jid:
+                self._lid_to_phone_map[lid_jid] = phone_jid
+                logger.info("Resolved LID to phone JID", lid=lid_jid, phone=phone_jid)
+                return phone_jid
+        except Exception as err:
+            logger.debug("Failed to resolve LID", lid=lid_jid, error=str(err))
+        return None
 
     async def send_message(self, jid: str, text: str) -> None:
         prefixed = text if ASSISTANT_HAS_OWN_NUMBER else f"{ASSISTANT_NAME}: {text}"
