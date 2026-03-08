@@ -275,7 +275,7 @@ class WhatsAppChannel:
         return self._connected
 
     def owns_jid(self, jid: str) -> bool:
-        return jid.endswith("@g.us") or jid.endswith("@s.whatsapp.net")
+        return jid.endswith("@g.us") or jid.endswith("@s.whatsapp.net") or jid.endswith("@lid")
 
     async def disconnect(self) -> None:
         self._connected = False
