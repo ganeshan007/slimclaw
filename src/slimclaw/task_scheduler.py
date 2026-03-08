@@ -110,7 +110,9 @@ async def _run_task(task: ScheduledTask, deps: SchedulerDependencies) -> None:
     sessions = deps.get_sessions()
     session_id = sessions.get(task.group_folder) if task.context_mode == "group" else None
 
-    # Idle timer
+    # Idle timer — scheduled tasks close quickly (5s) since they fire once,
+    # unlike interactive chat which waits IDLE_TIMEOUT (30 min) for follow-ups
+    TASK_IDLE_TIMEOUT_S = 5
     idle_task: Optional[asyncio.Task] = None
 
     def reset_idle_timer():
@@ -119,7 +121,7 @@ async def _run_task(task: ScheduledTask, deps: SchedulerDependencies) -> None:
             idle_task.cancel()
 
         async def _idle_close():
-            await asyncio.sleep(IDLE_TIMEOUT / 1000)
+            await asyncio.sleep(TASK_IDLE_TIMEOUT_S)
             logger.debug("Scheduled task idle timeout, closing container stdin", task_id=task.id)
             deps.queue.close_stdin(task.chat_jid)
 
