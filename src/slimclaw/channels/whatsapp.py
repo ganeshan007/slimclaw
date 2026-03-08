@@ -11,7 +11,7 @@ from typing import Optional
 from slimclaw.config import ASSISTANT_HAS_OWN_NUMBER, ASSISTANT_NAME, STORE_DIR, TRIGGER_PATTERN
 from slimclaw.db import get_last_group_sync, set_last_group_sync, update_chat_name
 from slimclaw.logger import logger
-from slimclaw.types import NewMessage, OnChatMetadata, OnInboundMessage, OnUnregisteredTrigger, RegisteredGroup
+from slimclaw.types import AppOpts, NewMessage, OnChatMetadata, OnInboundMessage, OnUnregisteredTrigger, RegisteredGroup
 
 GROUP_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000  # 24 hours
 
@@ -32,24 +32,14 @@ except ImportError:
     NEONIZE_AVAILABLE = False
 
 
-class WhatsAppChannelOpts:
-    def __init__(
-        self,
-        on_message: OnInboundMessage,
-        on_chat_metadata: OnChatMetadata,
-        registered_groups: callable,
-        on_unregistered_trigger: OnUnregisteredTrigger | None = None,
-    ):
-        self.on_message = on_message
-        self.on_chat_metadata = on_chat_metadata
-        self.registered_groups = registered_groups
-        self.on_unregistered_trigger = on_unregistered_trigger
+# Legacy alias for backwards compatibility
+WhatsAppChannelOpts = AppOpts
 
 
 class WhatsAppChannel:
     name = "whatsapp"
 
-    def __init__(self, opts: WhatsAppChannelOpts) -> None:
+    def __init__(self, opts: AppOpts) -> None:
         self.opts = opts
         self._connected = False
         self._client: Optional[NewClient] = None

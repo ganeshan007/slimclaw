@@ -32,34 +32,24 @@ This skill helps users add capabilities or modify behavior. Use AskUserQuestion 
 
 ## Common Customization Patterns
 
-### Adding a New Input Channel (e.g., Telegram, Slack, Discord)
+### Adding a New App (Telegram, Slack, Discord, Signal, etc.)
+
+**Use the `/add-app-template` skill** — it has a complete guide and code template.
+
+Quick summary:
+- Create **one file**: `src/slimclaw/channels/{app_name}.py`
+- Implement the `Channel` protocol (6 methods) — see `src/slimclaw/types.py`
+- Accept `AppOpts` in constructor (generic options shared by all apps)
+- Use a JID prefix (e.g., `tg:` for Telegram, `dc:` for Discord)
+- **No changes to `main.py` needed** — the registry auto-discovers your file
+- Optional deps are guarded with `try/except ImportError`
+- Credentials are read in `connect()`, never at import time
 
 Questions to ask:
-- Which channel? (Telegram, Slack, Discord, email, SMS, etc.)
+- Which app? (Telegram, Slack, Discord, Signal, email, SMS, etc.)
 - Same trigger word or different?
 - Same memory hierarchy or separate?
-- Should messages from this channel go to existing groups or new ones?
-
-Implementation pattern:
-1. Create `src/slimclaw/channels/{name}.py` implementing the `Channel` protocol from `src/slimclaw/types.py`:
-```python
-from slimclaw.types import Channel
-
-class NewChannel:
-    """Implements the Channel protocol."""
-    name: str = "channel-name"
-
-    async def connect(self) -> None: ...
-    async def send_message(self, jid: str, text: str) -> None: ...
-    def is_connected(self) -> bool: ...
-    def owns_jid(self, jid: str) -> bool: ...
-    async def disconnect(self) -> None: ...
-    async def set_typing(self, jid: str, is_typing: bool) -> None: ...
-```
-2. See `src/slimclaw/channels/whatsapp.py` for the reference implementation
-3. Add the channel instance in `main.py`'s `run()` function, wire `on_message` and `on_chat_metadata` callbacks
-4. Messages are stored via the `on_message` callback; routing is automatic via `owns_jid()`
-5. JID convention: prefix with channel identifier (e.g., `tg:` for Telegram, `dc:` for Discord)
+- Should messages from this app go to existing groups or new ones?
 
 ### Adding a New MCP Integration
 

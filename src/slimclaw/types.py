@@ -94,3 +94,12 @@ class Channel(Protocol):
 OnInboundMessage = Callable[[str, NewMessage], None]
 OnChatMetadata = Callable[[str, str, Optional[str], Optional[str], Optional[bool]], None]
 OnUnregisteredTrigger = Callable[[str, str, str], None]  # (chat_jid, sender_name, content)
+
+
+@dataclass
+class AppOpts:
+    """Generic constructor options accepted by all app channels."""
+    on_message: OnInboundMessage
+    on_chat_metadata: OnChatMetadata
+    registered_groups: Callable[[], dict[str, RegisteredGroup]]
+    on_unregistered_trigger: OnUnregisteredTrigger | None = None

@@ -17,7 +17,7 @@ from slimclaw.config import (
     POLL_INTERVAL,
     TRIGGER_PATTERN,
 )
-from slimclaw.channels.whatsapp import WhatsAppChannel, WhatsAppChannelOpts
+from slimclaw.channels.registry import discover_apps, get_enabled_apps
 from slimclaw.container_runner import (
     AvailableGroup,
     ContainerInput,
@@ -47,7 +47,7 @@ from slimclaw.ipc import start_ipc_watcher
 from slimclaw.logger import logger
 from slimclaw.router import find_channel, format_messages, format_outbound
 from slimclaw.task_scheduler import start_scheduler_loop
-from slimclaw.types import Channel, NewMessage, RegisteredGroup
+from slimclaw.types import AppOpts, Channel, NewMessage, RegisteredGroup
 
 # Module state
 _last_timestamp: str = ""
@@ -58,7 +58,6 @@ _message_loop_running: bool = False
 
 _channels: list[Channel] = []
 _queue = GroupQueue()
-_whatsapp: Optional[WhatsAppChannel] = None
 
 
 def _load_state() -> None:
@@ -399,8 +398,6 @@ def _recover_pending_messages() -> None:
 
 
 async def main() -> None:
-    global _whatsapp
-
     ensure_container_runtime_running()
     cleanup_orphans()
     init_database()
@@ -420,8 +417,8 @@ async def main() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s.name)))
 
-    # Channel callbacks
-    channel_opts = WhatsAppChannelOpts(
+    # Channel callbacks (shared by all apps)
+    app_opts = AppOpts(
         on_message=lambda chat_jid, msg: store_message(msg),
         on_chat_metadata=lambda chat_jid, ts, name=None, channel=None, is_group=None: store_chat_metadata(
             chat_jid, ts, name, channel, is_group
@@ -430,10 +427,17 @@ async def main() -> None:
         on_unregistered_trigger=_on_unregistered_trigger,
     )
 
-    # Create and connect channels
-    _whatsapp = WhatsAppChannel(channel_opts)
-    _channels.append(_whatsapp)
-    await _whatsapp.connect()
+    # Discover and connect enabled apps
+    available = discover_apps()
+    enabled = get_enabled_apps(available)
+    logger.info("App discovery", available=list(available.keys()), enabled=enabled)
+    for name in enabled:
+        cls = available.get(name)
+        if cls:
+            ch = cls(app_opts)
+            await ch.connect()
+            _channels.append(ch)
+            logger.info("App connected", app=name)
 
     # Start subsystems
     # Scheduler dependencies
@@ -482,8 +486,9 @@ async def main() -> None:
             _register_group(jid, group)
 
         async def sync_group_metadata(self, force):
-            if _whatsapp:
-                await _whatsapp.sync_group_metadata(force)
+            for ch in _channels:
+                if hasattr(ch, "sync_group_metadata"):
+                    await ch.sync_group_metadata(force)
 
         def get_available_groups(self):
             return _get_available_groups()

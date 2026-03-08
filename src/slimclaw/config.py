@@ -11,6 +11,7 @@ from slimclaw.env import read_env_file
 _env_config = read_env_file([
     "ASSISTANT_NAME",
     "ASSISTANT_HAS_OWN_NUMBER",
+    "ENABLED_APPS",
 ])
 
 ASSISTANT_NAME: str = (
@@ -19,6 +20,17 @@ ASSISTANT_NAME: str = (
 ASSISTANT_HAS_OWN_NUMBER: bool = (
     os.environ.get("ASSISTANT_HAS_OWN_NUMBER") or _env_config.get("ASSISTANT_HAS_OWN_NUMBER")
 ) == "true"
+
+# Optional comma-separated list of app names to load (e.g. "whatsapp,telegram").
+# When unset, all discovered apps are loaded.
+_enabled_apps_raw: str = (
+    os.environ.get("ENABLED_APPS") or _env_config.get("ENABLED_APPS") or ""
+)
+ENABLED_APPS: list[str] | None = (
+    [name.strip() for name in _enabled_apps_raw.split(",") if name.strip()]
+    if _enabled_apps_raw
+    else None
+)
 
 POLL_INTERVAL: float = 2.0  # seconds
 SCHEDULER_POLL_INTERVAL: float = 60.0

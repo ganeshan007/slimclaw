@@ -531,6 +531,49 @@ def step_9_discover_group(channel_info: dict, bot_name: str) -> tuple[str, str]:
     return "", ""
 
 
+def step_9_generic_app(app_name: str, bot_name: str) -> tuple[str, str]:
+    """Generic app setup for non-WhatsApp channels.
+
+    Collects a bot token and a chat ID using the ``{prefix}:{id}`` JID convention.
+    Returns ``(jid, display_name)``.
+    """
+    _header(9, f"Connect {app_name.title()} Channel")
+
+    PREFIX_MAP = {
+        "telegram": "tg",
+        "discord": "dc",
+        "slack": "sl",
+        "signal": "sg",
+    }
+    prefix = PREFIX_MAP.get(app_name, app_name[:2])
+
+    # Collect bot token
+    token_key = f"{app_name.upper()}_BOT_TOKEN"
+    print(f"  {DIM}Your {app_name.title()} bot token will be saved to .env as {token_key}{RESET}")
+    token = _prompt(f"{app_name.title()} bot token")
+    if token:
+        env_path = Path(".env")
+        existing = env_path.read_text() if env_path.exists() else ""
+        lines = [l for l in existing.splitlines() if not l.startswith(f"{token_key}=")]
+        lines.append(f"{token_key}={token}")
+        env_path.write_text("\n".join(lines) + "\n")
+        _ok(f"Token saved to .env")
+
+    # Collect chat ID for main channel
+    print()
+    print(f"  {DIM}Enter the chat/group ID for your main channel.{RESET}")
+    print(f"  {DIM}This will be stored as {prefix}:<id> internally.{RESET}")
+    chat_id = _prompt(f"Chat/group ID")
+    if not chat_id:
+        _warn("No chat ID provided — you can register a channel later")
+        return "", ""
+
+    jid = f"{prefix}:{chat_id}"
+    display_name = f"{app_name.title()} main channel"
+    _ok(f"Registered: {jid}")
+    return jid, display_name
+
+
 def step_10_register(jid: str, bot_name: str) -> None:
     _header(10, "Register Main Channel")
 
@@ -734,6 +777,11 @@ def run() -> None:
             print(f"  {DIM}To add {bot_name} to other groups, say \"join <group name>\" here.{RESET}")
         else:
             _warn(f"No main channel registered — start {bot_name} and register a group later")
+    elif app in ("telegram", "discord", "slack", "signal"):
+        jid, channel_name = step_9_generic_app(app, bot_name)
+        if jid:
+            step_10_register(jid, bot_name)
+            print(f"\n  {BOLD}Your main channel:{RESET} {channel_name}")
     elif app.startswith("skill:"):
         skill = app.removeprefix("skill:")
         print(f"\n  {CYAN}Base setup complete!{RESET}")
