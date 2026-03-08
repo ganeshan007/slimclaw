@@ -2,6 +2,7 @@ import pytest
 from slimclaw.db import (
     _init_test_database,
     create_task,
+    delete_registered_group,
     get_all_tasks,
     get_registered_group,
     get_task_by_id,
@@ -50,6 +51,10 @@ class MockDeps:
     def register_group(self, jid, group):
         groups[jid] = group
         set_registered_group(jid, group)
+
+    def unregister_group(self, jid):
+        groups.pop(jid, None)
+        return delete_registered_group(jid)
 
     async def sync_group_metadata(self, force):
         pass
@@ -387,3 +392,53 @@ class TestContextMode:
             "main", True, deps,
         )
         assert get_all_tasks()[0].context_mode == "isolated"
+
+
+# --- unregister_group authorization ---
+
+
+class TestUnregisterGroupAuth:
+    @pytest.mark.asyncio
+    async def test_main_can_unregister(self):
+        await process_task_ipc(
+            {"type": "unregister_group", "jid": "other@g.us"},
+            "main", True, deps,
+        )
+        assert get_registered_group("other@g.us") is None
+        assert "other@g.us" not in groups
+
+    @pytest.mark.asyncio
+    async def test_non_main_cannot_unregister(self):
+        await process_task_ipc(
+            {"type": "unregister_group", "jid": "third@g.us"},
+            "other-group", False, deps,
+        )
+        assert get_registered_group("third@g.us") is not None
+        assert "third@g.us" in groups
+
+    @pytest.mark.asyncio
+    async def test_cannot_unregister_main_group(self):
+        await process_task_ipc(
+            {"type": "unregister_group", "jid": "main@g.us"},
+            "main", True, deps,
+        )
+        assert get_registered_group("main@g.us") is not None
+        assert "main@g.us" in groups
+
+    @pytest.mark.asyncio
+    async def test_rejects_missing_jid(self):
+        await process_task_ipc(
+            {"type": "unregister_group"},
+            "main", True, deps,
+        )
+        # All groups should still be registered
+        assert len(groups) == 3
+
+    @pytest.mark.asyncio
+    async def test_rejects_unregistered_jid(self):
+        await process_task_ipc(
+            {"type": "unregister_group", "jid": "unknown@g.us"},
+            "main", True, deps,
+        )
+        # All groups should still be registered
+        assert len(groups) == 3

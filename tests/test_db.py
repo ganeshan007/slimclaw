@@ -2,16 +2,19 @@ import pytest
 from slimclaw.db import (
     _init_test_database,
     create_task,
+    delete_registered_group,
     delete_task,
     get_all_chats,
     get_messages_since,
     get_new_messages,
+    get_registered_group,
     get_task_by_id,
+    set_registered_group,
     store_chat_metadata,
     store_message,
     update_task,
 )
-from slimclaw.types import NewMessage, ScheduledTask
+from slimclaw.types import NewMessage, RegisteredGroup, ScheduledTask
 
 
 @pytest.fixture(autouse=True)
@@ -229,3 +232,30 @@ class TestTaskCrud:
         ))
         delete_task("task-3")
         assert get_task_by_id("task-3") is None
+
+
+# --- Registered group CRUD ---
+
+
+class TestRegisteredGroupCrud:
+    def _make_group(self, name="Test", folder="test"):
+        return RegisteredGroup(
+            name=name, folder=folder, trigger="@bot",
+            added_at="2024-01-01T00:00:00.000Z",
+        )
+
+    def test_delete_existing_group(self):
+        set_registered_group("group@g.us", self._make_group())
+        assert get_registered_group("group@g.us") is not None
+        assert delete_registered_group("group@g.us") is True
+        assert get_registered_group("group@g.us") is None
+
+    def test_delete_nonexistent_group(self):
+        assert delete_registered_group("nonexistent@g.us") is False
+
+    def test_delete_does_not_affect_other_groups(self):
+        set_registered_group("group1@g.us", self._make_group("G1", "g1"))
+        set_registered_group("group2@g.us", self._make_group("G2", "g2"))
+        delete_registered_group("group1@g.us")
+        assert get_registered_group("group1@g.us") is None
+        assert get_registered_group("group2@g.us") is not None

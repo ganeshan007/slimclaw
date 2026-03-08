@@ -32,6 +32,7 @@ from slimclaw.db import (
     get_all_registered_groups,
     get_all_sessions,
     get_all_tasks,
+    delete_registered_group,
     get_messages_since,
     get_new_messages,
     get_router_state,
@@ -88,6 +89,13 @@ def _register_group(jid: str, group: RegisteredGroup) -> None:
     (group_dir / "logs").mkdir(parents=True, exist_ok=True)
 
     logger.info("Group registered", jid=jid, name=group.name, folder=group.folder)
+
+
+def _unregister_group(jid: str) -> bool:
+    """Remove a group from the registry. Returns True if removed."""
+    if jid in _registered_groups:
+        del _registered_groups[jid]
+    return delete_registered_group(jid)
 
 
 def _get_available_groups() -> list[AvailableGroup]:
@@ -484,6 +492,9 @@ async def main() -> None:
 
         def register_group(self, jid, group):
             _register_group(jid, group)
+
+        def unregister_group(self, jid):
+            return _unregister_group(jid)
 
         async def sync_group_metadata(self, force):
             for ch in _channels:

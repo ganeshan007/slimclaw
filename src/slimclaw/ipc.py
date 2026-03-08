@@ -11,7 +11,7 @@ from croniter import croniter
 
 from slimclaw.config import DATA_DIR, IPC_POLL_INTERVAL, MAIN_GROUP_FOLDER, TIMEZONE
 from slimclaw.container_runner import AvailableGroup
-from slimclaw.db import create_task, delete_task, get_task_by_id, update_task
+from slimclaw.db import create_task, delete_registered_group, delete_task, get_task_by_id, update_task
 from slimclaw.logger import logger
 from slimclaw.types import RegisteredGroup, ScheduledTask
 
@@ -20,6 +20,7 @@ class IpcDeps(Protocol):
     async def send_message(self, jid: str, text: str) -> None: ...
     def registered_groups(self) -> dict[str, RegisteredGroup]: ...
     def register_group(self, jid: str, group: RegisteredGroup) -> None: ...
+    def unregister_group(self, jid: str) -> bool: ...
     async def sync_group_metadata(self, force: bool) -> None: ...
     def get_available_groups(self) -> list[AvailableGroup]: ...
     def write_groups_snapshot(
@@ -314,6 +315,27 @@ async def process_task_ipc(
             )
         else:
             logger.warning("Invalid register_group request - missing required fields", data=data)
+
+    elif task_type == "unregister_group":
+        if not is_main:
+            logger.warning("Unauthorized unregister_group attempt blocked", source_group=source_group)
+            return
+        jid = data.get("jid")
+        if jid:
+            if jid in registered_groups:
+                group = registered_groups[jid]
+                if group.folder == MAIN_GROUP_FOLDER:
+                    logger.warning("Cannot unregister the main group", jid=jid)
+                    return
+                deleted = deps.unregister_group(jid)
+                if deleted:
+                    logger.info("Group unregistered via IPC", jid=jid, name=group.name)
+                else:
+                    logger.warning("Group not found in database during unregister", jid=jid)
+            else:
+                logger.warning("Cannot unregister: group not registered", jid=jid)
+        else:
+            logger.warning("Invalid unregister_group request - missing jid", data=data)
 
     else:
         logger.warning("Unknown IPC task type", type=task_type)

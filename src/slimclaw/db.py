@@ -548,6 +548,13 @@ def set_registered_group(jid: str, group: RegisteredGroup) -> None:
 
 
 
+def delete_registered_group(jid: str) -> bool:
+    """Remove a registered group. Returns True if a row was deleted."""
+    db = _get_db()
+    cursor = db.execute("DELETE FROM registered_groups WHERE jid = ?", (jid,))
+    return cursor.rowcount > 0
+
+
 def get_all_registered_groups() -> dict[str, RegisteredGroup]:
     db = _get_db()
     rows = db.execute("SELECT * FROM registered_groups").fetchall()
