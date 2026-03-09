@@ -187,6 +187,10 @@ python benchmarks/profile_python.py
 - macOS or Linux
 - `libmagic` (`brew install libmagic` on macOS)
 
+## Community
+
+Join the [Discord server](https://discord.gg/rfSjcbzX) for help, feedback, and discussion.
+
 ## License
 
 MIT
