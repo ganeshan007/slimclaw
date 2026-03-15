@@ -358,6 +358,7 @@ async function runQuery(
   prompt: string,
   sessionId: string | undefined,
   mcpServerPath: string,
+  notionBridgePath: string,
   containerInput: ContainerInput,
   sdkEnv: Record<string, string | undefined>,
   resumeAt?: string,
@@ -453,7 +454,7 @@ async function runQuery(
         ...(sdkEnv.NOTION_MCP_URL ? {
           notion: {
             command: 'node',
-            args: [path.join(__dirname, 'notion-mcp-bridge.js')],
+            args: [notionBridgePath],
             env: {
               NOTION_MCP_URL: sdkEnv.NOTION_MCP_URL,
             },
@@ -528,6 +529,7 @@ async function main(): Promise<void> {
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
+  const notionBridgePath = path.join(__dirname, 'notion-mcp-bridge.js');
 
   let sessionId = containerInput.sessionId;
   fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
@@ -552,7 +554,7 @@ async function main(): Promise<void> {
     while (true) {
       log(`Starting query (session: ${sessionId || 'new'}, resumeAt: ${resumeAt || 'latest'})...`);
 
-      const queryResult = await runQuery(prompt, sessionId, mcpServerPath, containerInput, sdkEnv, resumeAt);
+      const queryResult = await runQuery(prompt, sessionId, mcpServerPath, notionBridgePath, containerInput, sdkEnv, resumeAt);
       if (queryResult.newSessionId) {
         sessionId = queryResult.newSessionId;
       }
