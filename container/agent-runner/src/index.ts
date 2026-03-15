@@ -185,8 +185,9 @@ function createPreCompactHook(): HookCallback {
 }
 
 // Secrets to strip from Bash tool subprocess environments.
-// These are needed by claude-code for API auth but should never
-// be visible to commands Kit runs.
+// ANTHROPIC_API_KEY is now a placeholder (slimclaw-proxy-token) — not secret,
+// but strip it anyway to prevent subprocesses from using the proxy unintentionally.
+// CLAUDE_CODE_OAUTH_TOKEN is a real secret and must never reach Bash.
 const SECRET_ENV_VARS = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN'];
 
 function createSanitizeBashHook(): HookCallback {
@@ -432,7 +433,8 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__slimclaw__*'
+        'mcp__slimclaw__*',
+        'mcp__notion__*',
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -448,6 +450,15 @@ async function runQuery(
             SLIMCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
+        ...(sdkEnv.NOTION_MCP_URL ? {
+          notion: {
+            command: 'node',
+            args: [path.join(__dirname, 'notion-mcp-bridge.js')],
+            env: {
+              NOTION_MCP_URL: sdkEnv.NOTION_MCP_URL,
+            },
+          },
+        } : {}),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook()] }],

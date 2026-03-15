@@ -44,8 +44,11 @@ from slimclaw.db import (
     store_message,
 )
 from slimclaw.group_queue import GroupQueue
+from slimclaw.credential_proxy import start_credential_proxy
+from slimclaw.env import read_env_file
 from slimclaw.ipc import start_ipc_watcher
 from slimclaw.logger import logger
+from slimclaw.notion_mcp import start_notion_mcp_server
 from slimclaw.router import find_channel, format_messages, format_outbound
 from slimclaw.task_scheduler import start_scheduler_loop
 from slimclaw.types import AppOpts, Channel, NewMessage, RegisteredGroup
@@ -412,11 +415,33 @@ async def main() -> None:
     logger.info("Database initialized")
     _load_state()
 
+    # Start credential proxy — real ANTHROPIC_API_KEY stays on host only
+    _secrets = read_env_file(["ANTHROPIC_API_KEY", "NOTION_API_KEY"])
+    anthropic_key = _secrets.get("ANTHROPIC_API_KEY", "")
+    if not anthropic_key:
+        logger.warning("ANTHROPIC_API_KEY not set — credential proxy will not authenticate")
+    proxy_server = await start_credential_proxy(anthropic_key)
+    logger.info("Credential proxy started", port=3001)
+
+    # Start Notion MCP host server if NOTION_API_KEY is configured
+    notion_key = _secrets.get("NOTION_API_KEY", "")
+    notion_server = None
+    if notion_key:
+        notion_server = await start_notion_mcp_server(notion_key)
+        logger.info("Notion MCP host server started", port=3002)
+    else:
+        logger.debug("NOTION_API_KEY not set, Notion MCP server not started")
+
+    del _secrets  # Clear secrets from memory after server startup
+
     # Graceful shutdown
     loop = asyncio.get_event_loop()
 
     async def shutdown(sig_name: str) -> None:
         logger.info("Shutdown signal received", signal=sig_name)
+        proxy_server.close()
+        if notion_server is not None:
+            notion_server.close()
         await _queue.shutdown(10000)
         for ch in _channels:
             await ch.disconnect()

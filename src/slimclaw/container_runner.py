@@ -102,6 +102,13 @@ def _build_volume_mounts(group: RegisteredGroup, is_main: bool) -> list[VolumeMo
             container_path="/workspace/project",
             readonly=False,
         ))
+        # Shadow .env so containers can't read secrets from disk even though
+        # the project root is mounted.
+        mounts.append(VolumeMount(
+            host_path="/dev/null",
+            container_path="/workspace/project/.env",
+            readonly=True,
+        ))
         mounts.append(VolumeMount(
             host_path=str(GROUPS_DIR / group.folder),
             container_path="/workspace/group",
@@ -193,7 +200,14 @@ def _build_volume_mounts(group: RegisteredGroup, is_main: bool) -> list[VolumeMo
 
 
 def _read_secrets() -> dict[str, str]:
-    return read_env_file(["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "CLAUDE_MODEL", "NOTION_API_KEY"])
+    # ANTHROPIC_API_KEY and NOTION_API_KEY are no longer injected into containers.
+    # ANTHROPIC_API_KEY is handled by the credential proxy (port 3001).
+    # NOTION_API_KEY is handled by the Notion MCP host server (port 3002).
+    return read_env_file(["CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_MODEL"])
+
+
+# Cached at module load — NOTION_API_KEY presence won't change at runtime.
+_NOTION_CONFIGURED: bool = bool(read_env_file(["NOTION_API_KEY"]).get("NOTION_API_KEY"))
 
 
 def _build_container_args(mounts: list[VolumeMount], container_name: str) -> list[str]:
@@ -204,6 +218,20 @@ def _build_container_args(mounts: list[VolumeMount], container_name: str) -> lis
     if host_uid != 0 and host_uid != 1000:
         args.extend(["--user", f"{host_uid}:{host_gid}"])
         args.extend(["-e", "HOME=/home/node"])
+
+    # On Linux, host.docker.internal isn't automatic — add a host alias.
+    import sys
+    if sys.platform == "linux":
+        args.extend(["--add-host", "host.docker.internal:host-gateway"])
+
+    # Credential proxy: container uses a placeholder key + proxy base URL.
+    # The host-side proxy (port 3001) replaces the placeholder with the real key.
+    args.extend(["-e", "ANTHROPIC_API_KEY=slimclaw-proxy-token"])
+    args.extend(["-e", "ANTHROPIC_BASE_URL=http://host.docker.internal:3001"])
+
+    # Notion MCP: tell the in-container bridge where the host server is.
+    if _NOTION_CONFIGURED:
+        args.extend(["-e", "NOTION_MCP_URL=http://host.docker.internal:3002"])
 
     for mount in mounts:
         if mount.readonly:

@@ -1,120 +1,28 @@
 ---
 name: notion
 description: Read and write Notion pages and databases. Use when the user wants to log, store, search, or retrieve information in Notion.
-allowed-tools: Bash,WebFetch
+allowed-tools: mcp__notion__notion_search,mcp__notion__notion_get_page,mcp__notion__notion_get_blocks,mcp__notion__notion_create_page,mcp__notion__notion_query_database,mcp__notion__notion_append_blocks,mcp__notion__notion_update_page
 ---
 
-Use WebFetch to call the Notion API.
-
-**Before making any API call**, read the key from the environment:
-```
-Bash: echo $NOTION_API_KEY
-```
-Use the returned value (e.g. `ntn_abc123...`) as the literal Bearer token — do NOT use the string `$NOTION_API_KEY` in the header.
-
-**Base URL:** https://api.notion.com/v1
-
-**Required headers on every request:**
-- `Authorization: Bearer <value from echo $NOTION_API_KEY>`
-- `Notion-Version: 2022-06-28`
-- `Content-Type: application/json` (for POST/PATCH)
-
----
+Use the Notion MCP tools to interact with Notion. Authentication is handled by the host — no API key is needed here.
 
 ## Search
-
-POST https://api.notion.com/v1/search
-
-```json
-{ "query": "your search term" }
-```
-
----
+`mcp__notion__notion_search` with `query="your search term"`
 
 ## Read a page
-
-GET https://api.notion.com/v1/pages/{page_id}
-
----
+`mcp__notion__notion_get_page` with `page_id="PAGE_ID"`
 
 ## Read page content (blocks)
-
-GET https://api.notion.com/v1/blocks/{page_id}/children
-
----
+`mcp__notion__notion_get_blocks` with `page_id="PAGE_ID"`
 
 ## Create a page
-
-POST https://api.notion.com/v1/pages
-
-```json
-{
-  "parent": { "page_id": "PARENT_PAGE_ID" },
-  "properties": {
-    "title": {
-      "title": [{ "text": { "content": "Page Title" } }]
-    }
-  },
-  "children": [
-    {
-      "object": "block",
-      "type": "paragraph",
-      "paragraph": {
-        "rich_text": [{ "text": { "content": "Body text here." } }]
-      }
-    }
-  ]
-}
-```
-
----
+`mcp__notion__notion_create_page` with `parent_page_id="PARENT_ID"`, `title="Title"`, `body="Content"`
 
 ## Query a database
-
-POST https://api.notion.com/v1/databases/{database_id}/query
-
-```json
-{
-  "filter": {
-    "property": "Status",
-    "select": { "equals": "In Progress" }
-  },
-  "sorts": [
-    { "property": "Created", "direction": "descending" }
-  ]
-}
-```
-
----
+`mcp__notion__notion_query_database` with `database_id="DB_ID"`, optionally `filter={...}`, `sorts=[...]`
 
 ## Append blocks to a page
-
-PATCH https://api.notion.com/v1/blocks/{page_id}/children
-
-```json
-{
-  "children": [
-    {
-      "object": "block",
-      "type": "paragraph",
-      "paragraph": {
-        "rich_text": [{ "text": { "content": "New content to append." } }]
-      }
-    }
-  ]
-}
-```
-
----
+`mcp__notion__notion_append_blocks` with `page_id="PAGE_ID"`, `children=[...]`
 
 ## Update a page property
-
-PATCH https://api.notion.com/v1/pages/{page_id}
-
-```json
-{
-  "properties": {
-    "Status": { "select": { "name": "Done" } }
-  }
-}
-```
+`mcp__notion__notion_update_page` with `page_id="PAGE_ID"`, `properties={...}`
