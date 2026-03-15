@@ -54,18 +54,18 @@ async def _handle_connection(
         body_start = header_buf[header_end:]
 
         # Security: only forward requests carrying our placeholder token
-        placeholder = f"Bearer {PLACEHOLDER_TOKEN}".encode()
-        if placeholder not in headers_raw:
+        if PLACEHOLDER_TOKEN.encode() not in headers_raw:
             writer.write(b"HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
             await writer.drain()
             return
 
-        # Replace placeholder with real key, rewrite Host, force Connection: close
-        headers_raw = headers_raw.replace(placeholder, f"Bearer {api_key}".encode())
+        # Rewrite headers: replace placeholder in x-api-key or Authorization,
+        # fix Host, force Connection: close.
         header_block = headers_raw.rstrip(b"\r\n")
         lines = header_block.split(b"\r\n")
         new_lines: list[bytes] = []
         has_connection = False
+        placeholder_bytes = PLACEHOLDER_TOKEN.encode()
         for line in lines:
             lower = line.lower()
             if lower.startswith(b"host:"):
@@ -73,6 +73,10 @@ async def _handle_connection(
             elif lower.startswith(b"connection:"):
                 new_lines.append(b"Connection: close")
                 has_connection = True
+            elif lower.startswith(b"x-api-key:") and placeholder_bytes in line:
+                new_lines.append(b"x-api-key: " + api_key.encode())
+            elif lower.startswith(b"authorization:") and placeholder_bytes in line:
+                new_lines.append(b"Authorization: Bearer " + api_key.encode())
             else:
                 new_lines.append(line)
         if not has_connection:
