@@ -8,7 +8,7 @@ def read_env_file(keys: list[str]) -> dict[str, str]:
     do with the values. This keeps secrets out of the process environment
     so they don't leak to child processes.
     """
-    env_file = Path.cwd() / ".env"
+    env_file = Path(__file__).parents[2] / ".env"
     try:
         content = env_file.read_text(encoding="utf-8")
     except (FileNotFoundError, PermissionError):

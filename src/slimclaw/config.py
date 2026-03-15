@@ -37,7 +37,7 @@ SCHEDULER_POLL_INTERVAL: float = 60.0
 IPC_POLL_INTERVAL: float = 1.0
 
 # Absolute paths needed for container mounts
-PROJECT_ROOT: Path = Path.cwd()
+PROJECT_ROOT: Path = Path(__file__).parents[2]
 HOME_DIR: str = os.environ.get("HOME") or "/Users/user"
 
 # Mount security: allowlist stored OUTSIDE project root, never mounted into containers

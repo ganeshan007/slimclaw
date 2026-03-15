@@ -1,15 +1,21 @@
 ---
 name: notion
 description: Read and write Notion pages and databases. Use when the user wants to log, store, search, or retrieve information in Notion.
-allowed-tools: WebFetch
+allowed-tools: Bash,WebFetch
 ---
 
-Use WebFetch to call the Notion API. The API key is available as `NOTION_API_KEY` in the environment.
+Use WebFetch to call the Notion API.
+
+**Before making any API call**, read the key from the environment:
+```
+Bash: echo $NOTION_API_KEY
+```
+Use the returned value (e.g. `ntn_abc123...`) as the literal Bearer token — do NOT use the string `$NOTION_API_KEY` in the header.
 
 **Base URL:** https://api.notion.com/v1
 
 **Required headers on every request:**
-- `Authorization: Bearer $NOTION_API_KEY`
+- `Authorization: Bearer <value from echo $NOTION_API_KEY>`
 - `Notion-Version: 2022-06-28`
 - `Content-Type: application/json` (for POST/PATCH)
 
