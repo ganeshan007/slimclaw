@@ -16,7 +16,9 @@ Use the Notion MCP tools to interact with Notion. Authentication is handled by t
 `mcp__notion__notion_get_blocks` with `page_id="PAGE_ID"`
 
 ## Create a page
-`mcp__notion__notion_create_page` with `parent_page_id="PARENT_ID"`, `title="Title"`, `body="Content"`
+`mcp__notion__notion_create_page` with `title="Title"`, optionally `body="Content"`
+- For a top-level workspace page: omit `parent_page_id`
+- To nest under an existing page: include `parent_page_id="PAGE_ID"`
 
 ## Query a database
 `mcp__notion__notion_query_database` with `database_id="DB_ID"`, optionally `filter={...}`, `sorts=[...]`

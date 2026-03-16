@@ -51,8 +51,13 @@ def _dispatch(tool: str, tool_input: dict, api_key: str) -> dict:
         return _notion_request("GET", f"/blocks/{tool_input['page_id']}/children", None, api_key)
 
     elif tool == "notion_create_page":
+        parent_page_id = tool_input.get("parent_page_id")
+        if parent_page_id:
+            parent = {"page_id": parent_page_id}
+        else:
+            parent = {"type": "workspace", "workspace": True}
         payload: dict = {
-            "parent": {"page_id": tool_input["parent_page_id"]},
+            "parent": parent,
             "properties": {
                 "title": {"title": [{"text": {"content": tool_input.get("title", "")}}]}
             },
