@@ -16,9 +16,10 @@ Use the Notion MCP tools to interact with Notion. Authentication is handled by t
 `mcp__notion__notion_get_blocks` with `page_id="PAGE_ID"`
 
 ## Create a page
-`mcp__notion__notion_create_page` with `title="Title"`, optionally `body="Content"`
-- For a top-level workspace page: omit `parent_page_id`
-- To nest under an existing page: include `parent_page_id="PAGE_ID"`
+`mcp__notion__notion_create_page` with `parent_page_id="PARENT_ID"`, `title="Title"`, optionally `body="Content"`
+
+The Notion API always requires a parent page — workspace-root creation is not supported for integrations.
+If the user doesn't specify a parent, use `mcp__notion__notion_search` with an empty query to list accessible pages, pick a sensible one (e.g. a page named "Home", "Notes", or similar), and create under it without asking the user for a page ID.
 
 ## Query a database
 `mcp__notion__notion_query_database` with `database_id="DB_ID"`, optionally `filter={...}`, `sorts=[...]`

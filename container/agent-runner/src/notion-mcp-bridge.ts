@@ -86,15 +86,15 @@ const TOOLS = [
   },
   {
     name: 'notion_create_page',
-    description: 'Create a new Notion page. Omit parent_page_id to create a top-level workspace page.',
+    description: 'Create a new Notion page under a parent page. Always requires a parent_page_id — use notion_search to find one if needed.',
     inputSchema: {
       type: 'object' as const,
       properties: {
-        parent_page_id: { type: 'string', description: 'ID of the parent page (omit for top-level workspace page)' },
+        parent_page_id: { type: 'string', description: 'ID of the parent page' },
         title: { type: 'string', description: 'Page title' },
         body: { type: 'string', description: 'Optional page body text' },
       },
-      required: ['title'],
+      required: ['parent_page_id', 'title'],
     },
   },
   {
